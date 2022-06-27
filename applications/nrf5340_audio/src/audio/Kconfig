@@ -282,3 +282,5 @@ config AUDIO_DATAPATH_STACK_SIZE
 
 endmenu # Stack sizes
 endmenu # Audio
+
+rsource "Kconfig.defaults"

@@ -1,0 +1,31 @@
+#
+# Copyright (c) 2022 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+# HEADSET
+if AUDIO_DEV = 1
+
+config LC3_ENC_CHAN_MAX
+	int
+	default 1
+
+config LC3_DEC_CHAN_MAX
+	int
+	default 1
+
+endif # AUDIO_DEV = 1 (HEADSET)
+
+# GATEWAY
+if AUDIO_DEV = 2
+
+config LC3_ENC_CHAN_MAX
+	int
+	default 2
+
+config LC3_DEC_CHAN_MAX
+	int
+	default 1
+
+endif # AUDIO_DEV = 2 (GATEWAY)

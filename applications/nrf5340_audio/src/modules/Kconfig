@@ -104,3 +104,5 @@ config POWER_MODULE_STACK_SIZE
 
 endmenu # Stack sizes
 endmenu # Modules
+
+rsource "Kconfig.defaults"

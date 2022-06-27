@@ -181,3 +181,5 @@ config LOG_BLE_LEVEL
 
 endmenu # Log levels
 endmenu # Bluetooth
+
+rsource "Kconfig.defaults"
