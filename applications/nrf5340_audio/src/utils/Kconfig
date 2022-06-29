@@ -48,3 +48,5 @@ config LOG_CS47L63_LEVEL
 
 endmenu # Log levels
 endmenu # Utils
+
+rsource "Kconfig.defaults"

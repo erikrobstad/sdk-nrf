@@ -4,5 +4,7 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
-# CONFIG_TRANSPORT_BIS=y
-CONFIG_AUDIO_SOURCE_I2S=y
+# Channel assignment writes to UICR
+config NRFX_NVMC
+	bool
+	default y
