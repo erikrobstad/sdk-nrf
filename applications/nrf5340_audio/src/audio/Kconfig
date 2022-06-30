@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
+rsource "Kconfig.defaults"
+
 menu "Audio"
 
 choice AUDIO_FRAME_DURATION
@@ -282,5 +284,3 @@ config AUDIO_DATAPATH_STACK_SIZE
 
 endmenu # Stack sizes
 endmenu # Audio
-
-rsource "Kconfig.defaults"

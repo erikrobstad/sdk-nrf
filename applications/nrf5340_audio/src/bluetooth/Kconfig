@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
+rsource "Kconfig.defaults"
+
 menu "Bluetooth"
 
 config BLE_ACL_CONN_INTERVAL
@@ -181,5 +183,3 @@ config LOG_BLE_LEVEL
 
 endmenu # Log levels
 endmenu # Bluetooth
-
-rsource "Kconfig.defaults"

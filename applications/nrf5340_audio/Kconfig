@@ -32,13 +32,13 @@ config TRANSPORT_CIS
 endchoice
 
 #----------------------------------------------------------------------------#
+rsource "Kconfig.defaults"
 rsource "src/audio/Kconfig"
 rsource "src/bluetooth/Kconfig"
 rsource "src/drivers/Kconfig"
 rsource "src/events/Kconfig"
 rsource "src/modules/Kconfig"
 rsource "src/utils/Kconfig"
-rsource "Kconfig.defaults"
 
 #----------------------------------------------------------------------------#
 menu "Logging"

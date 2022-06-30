@@ -46,15 +46,7 @@ TARGET_DEV_GATEWAY_FOLDER = NRF5340_AUDIO_FOLDER / "build/dev_gateway"
 TARGET_RELEASE_FOLDER = "build_release"
 TARGET_DEBUG_FOLDER = "build_debug"
 
-COMP_FLAG_RELEASE = NRF5340_AUDIO_FOLDER / "overlay-release.conf"
-COMP_FLAG_DEBUG = NRF5340_AUDIO_FOLDER / "overlay-debug.conf"
-
 PRISTINE_FLAG = " --pristine"
-
-
-def generate_overlay_argument(files: List[Path]):
-    flattened_paths = " ".join(str(of) for of in files)
-    return f'-DOVERLAY_CONFIG="{flattened_paths}"'
 
 
 def __print_add_color(status):
@@ -93,39 +85,37 @@ def __print_dev_conf(device_list):
 def __build_cmd_get(core: Core, device: AudioDevice, build: BuildType, pristine):
     if core == Core.app:
         build_cmd = f"west build {TARGET_CORE_APP_FOLDER} -b {TARGET_BOARD_NRF5340_AUDIO_DK_APP_NAME}"
-        overlay_files = []
         if device == AudioDevice.headset:
-            device_flag = " -DCONFIG_AUDIO_DEV=1"
+            device_flag = "-DCONFIG_AUDIO_DEV=1"
             dest_folder = TARGET_DEV_HEADSET_FOLDER
         elif device == AudioDevice.gateway:
-            device_flag = " -DCONFIG_AUDIO_DEV=2"
+            device_flag = "-DCONFIG_AUDIO_DEV=2"
             dest_folder = TARGET_DEV_GATEWAY_FOLDER
         else:
             raise Exception("Invalid device!")
         if build == BuildType.debug:
-            overlay_files.append(COMP_FLAG_DEBUG)
+            release_flag = ""
             dest_folder /= TARGET_DEBUG_FOLDER
         elif build == BuildType.release:
-            overlay_files.append(COMP_FLAG_RELEASE)
+            release_flag = " -DCONF_FILE=prj_release.conf"
             dest_folder /= TARGET_RELEASE_FOLDER
         else:
             raise Exception("Invalid build type!")
-        overlay_conf_flags = generate_overlay_argument(overlay_files)
         if pristine:
-            build_cmd += " -p "
+            build_cmd += " -p"
 
     elif core == Core.net:
         # The net core is precompiled
         dest_folder = TARGET_CORE_NET_FOLDER
         build_cmd = ""
-        overlay_conf_flags = ""
         device_flag = ""
+        release_flag = ""
 
-    return build_cmd, dest_folder, overlay_conf_flags, device_flag
+    return build_cmd, dest_folder, device_flag, release_flag
 
 
 def __build_module(build_config):
-    build_cmd, dest_folder, overlay_conf_flags, device_flag = __build_cmd_get(
+    build_cmd, dest_folder, device_flag, release_flag = __build_cmd_get(
         build_config.core,
         build_config.device,
         build_config.build,
@@ -138,7 +128,7 @@ def __build_module(build_config):
 
     # Only add compiler flags if folder doesn't exist already
     if not dest_folder.exists():
-        west_str = west_str + overlay_conf_flags + device_flag
+        west_str = west_str + device_flag + release_flag
 
     print("Run: " + west_str)
 
