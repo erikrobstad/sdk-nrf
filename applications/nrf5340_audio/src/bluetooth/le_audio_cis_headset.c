@@ -12,13 +12,11 @@
 #include <bluetooth/audio/audio.h>
 #include <bluetooth/audio/capabilities.h>
 
-
 #include "macros_common.h"
 #include "ctrl_events.h"
 #include "ble_audio_services.h"
 #include "audio_datapath.h"
 #include "channel_assignment.h"
-#include "le_audio_cis.h"
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(cis_headset, CONFIG_LOG_BLE_LEVEL);
@@ -270,8 +268,8 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 
 static int adv_start(void)
 {
-	enum audio_channel channel;
 	int ret;
+	enum audio_channel channel;
 
 	ret = channel_assignment_get(&channel);
 	if (ret) {

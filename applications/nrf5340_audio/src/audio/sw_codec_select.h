@@ -59,14 +59,14 @@
 
 enum sw_codec_select {
 	SW_CODEC_NONE,
-	SW_CODEC_LC3, /**< Low Complexity Communication Codec */
-	SW_CODEC_SBC, /**< Subband codec */
+	SW_CODEC_LC3, /* Low Complexity Communication Codec */
+	SW_CODEC_SBC, /* Subband codec */
 };
 
 enum sw_codec_select_ch {
 	SW_CODEC_ZERO_CHANNELS,
-	SW_CODEC_MONO, /**< Only use one channel */
-	SW_CODEC_STEREO, /**< Use both channels */
+	SW_CODEC_MONO, /* Only use one channel */
+	SW_CODEC_STEREO, /* Use both channels */
 };
 
 enum audio_channel_select {
@@ -79,22 +79,22 @@ struct sw_codec_encoder {
 	bool enabled;
 	int bitrate;
 	enum sw_codec_select_ch channel_mode;
-	enum audio_channel_select audio_ch; /**< Only used if channel mode is mono */
+	enum audio_channel_select audio_ch; /* Only used if channel mode is mono */
 };
 
 struct sw_codec_decoder {
 	bool enabled;
 	enum sw_codec_select_ch channel_mode;
-	enum audio_channel_select audio_ch; /**< Only used if channel mode is mono */
+	enum audio_channel_select audio_ch; /* Only used if channel mode is mono */
 };
 
 /** @brief  Sw_codec configuration structure
  */
 struct sw_codec_config {
-	enum sw_codec_select sw_codec; /**< sw_codec to be used, e.g. LC3, SBC etc */
-	struct sw_codec_decoder decoder; /**< Struct containing settings for decoder */
-	struct sw_codec_encoder encoder; /**< Struct containing settings for encoder */
-	bool initialized; /**< Status of codec */
+	enum sw_codec_select sw_codec; /* sw_codec to be used, e.g. LC3, SBC etc */
+	struct sw_codec_decoder decoder; /* Struct containing settings for decoder */
+	struct sw_codec_encoder encoder; /* Struct containing settings for encoder */
+	bool initialized; /* Status of codec */
 };
 
 /**@brief	Encode PCM data and output encoded data
