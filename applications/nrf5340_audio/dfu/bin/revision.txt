@@ -1,0 +1,2 @@
+ble5-ctr-rpmsg_shifted.hex for normal b0n size
+ble5-ctr-rpmsg_shifted_min.hex for minimal b0n size

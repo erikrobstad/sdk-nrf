@@ -65,10 +65,6 @@ config BT_L2CAP_TX_BUF_COUNT
 	int
 	default 6
 
-config BT_BUF_ACL_RX_SIZE
-	int
-	default 259
-
 # HEADSET
 if AUDIO_DEV = 1
 
