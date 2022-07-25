@@ -285,15 +285,21 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 
 	(void)memset(params, 0, sizeof(*params));
 	ret = headset_conn_index_get(conn, &conn_index);
+
 	if (ret) {
 		LOG_ERR("Unknown connection, should not reach here");
 	} else {
+#if (CONFIG_BT_VCS_CLIENT)
+		ret = ble_vcs_discover(conn, conn_index);
+		if (ret) {
+			LOG_ERR("Could not do VCS discover");
+		}
+#endif /* (CONFIG_BT_VCS_CLIENT) */
 		ret = bt_audio_stream_config(conn, &audio_streams[conn_index], sinks[conn_index],
 					     &lc3_preset_nrf5340.codec);
-	}
-
-	if (ret) {
-		LOG_ERR("Could not configure stream");
+		if (ret) {
+			LOG_ERR("Could not configure stream");
+		}
 	}
 }
 
@@ -409,17 +415,17 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
+	ret = headset_conn_index_get(conn, &conn_index);
+
+	if (ret) {
+		LOG_ERR("Unknown connection, should not reach here");
+		return;
+	}
+
 	if (err) {
 		LOG_ERR("ACL connection to %s failed, error %d", addr, err);
-		ret = headset_conn_index_get(conn, &conn_index);
-
-		if (ret) {
-			LOG_ERR("Unknown connection, should not reach here");
-		} else {
-			bt_conn_unref(headset_conn[conn_index]);
-			headset_conn[conn_index] = NULL;
-		}
-
+		bt_conn_unref(headset_conn[conn_index]);
+		headset_conn[conn_index] = NULL;
 		ble_acl_start_scan();
 		return;
 	} else {
