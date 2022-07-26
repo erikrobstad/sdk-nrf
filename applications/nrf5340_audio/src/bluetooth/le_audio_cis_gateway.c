@@ -39,7 +39,7 @@ LISTIFY(CONFIG_BT_ISO_MAX_CHAN, NET_BUF_POOL_ITERATE, (;))
 #define BT_LE_CONN_PARAM_MULTI                                                                     \
 	BT_LE_CONN_PARAM(CONFIG_BLE_ACL_CONN_INTERVAL, CONFIG_BLE_ACL_CONN_INTERVAL,               \
 			 CONFIG_BLE_ACL_SLAVE_LATENCY, CONFIG_BLE_ACL_SUP_TIMEOUT)
-#define CIS_CONN_RETRY_TIMES 10
+#define CIS_CONN_RETRY_TIMES 5
 
 static struct bt_conn *headset_conn[CONFIG_BT_MAX_CONN];
 static struct bt_audio_stream audio_streams[CONFIG_BT_AUDIO_UNICAST_CLIENT_ASE_SNK_COUNT];
@@ -53,6 +53,12 @@ static struct net_buf_pool *iso_tx_pools[] = { LISTIFY(CONFIG_BT_ISO_MAX_CHAN,
 /* clang-format on */
 static struct bt_audio_lc3_preset lc3_preset_nrf5340 = BT_AUDIO_LC3_UNICAST_PRESET_NRF5340_AUDIO;
 static atomic_t iso_tx_pool_alloc[CONFIG_BT_ISO_MAX_CHAN];
+struct worker_data {
+	uint8_t channel;
+	uint8_t retries;
+} __aligned(4);
+K_MSGQ_DEFINE(kwork_msgq, sizeof(struct worker_data), CONFIG_BT_ISO_MAX_CHAN, 4);
+static struct k_work_delayable stream_start_work[CONFIG_BT_ISO_MAX_CHAN];
 
 static void ble_acl_start_scan(void);
 
@@ -143,30 +149,59 @@ static void stream_qos_set_cb(struct bt_audio_stream *stream)
 	}
 }
 
+static void work_stream_start(struct k_work *work)
+{
+	int ret;
+	struct worker_data work_data;
+
+	ret = k_msgq_get(&kwork_msgq, &work_data, K_NO_WAIT);
+	if (ret) {
+		LOG_ERR("Cannot get info for start stream");
+	}
+
+	ret = bt_audio_stream_start(&audio_streams[work_data.channel]);
+	work_data.retries++;
+
+	if (ret) {
+		if (work_data.retries < CIS_CONN_RETRY_TIMES) {
+			LOG_WRN("Got connect error from ch %d Retrying. code: %d count: %d",
+				work_data.channel, ret, work_data.retries);
+			ret = k_msgq_put(&kwork_msgq, &work_data, K_NO_WAIT);
+			if (ret) {
+				LOG_ERR("No space in the queue for the bond");
+			}
+			/* Delay added to prevent controller overloading */
+			k_work_reschedule(&stream_start_work[work_data.channel], K_MSEC(500));
+		} else {
+			LOG_ERR("Could not connect ch %d after %d retries", work_data.channel,
+				work_data.retries);
+			bt_conn_disconnect(headset_conn[work_data.channel],
+					   BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		}
+	}
+}
+
 static void stream_enabled_cb(struct bt_audio_stream *stream)
 {
 	int ret;
 	uint8_t channel_index;
-	static uint8_t retry_times;
 
 	ret = stream_index_get(stream, &channel_index);
 	if (ret) {
 		LOG_ERR("Stream not found");
 	} else {
-		ret = bt_audio_stream_start(&audio_streams[channel_index]);
-		while (ret) {
-			k_sleep(K_MSEC(1000));
-			LOG_WRN("Unable to start stream: %d", ret);
-			ret = bt_audio_stream_start(&audio_streams[channel_index]);
-			retry_times++;
-			if (retry_times > CIS_CONN_RETRY_TIMES) {
-				LOG_WRN("Failed to create CIS for start stream for left channel");
-				break;
-			}
-		}
-	}
+		struct worker_data work_data;
 
-	retry_times = 0;
+		work_data.channel = channel_index;
+		work_data.retries = 0;
+
+		ret = k_msgq_put(&kwork_msgq, &work_data, K_NO_WAIT);
+		if (ret) {
+			LOG_ERR("No space in the queue for the bond");
+		}
+
+		k_work_schedule(&stream_start_work[channel_index], K_MSEC(500));
+	}
 }
 
 static void stream_started_cb(struct bt_audio_stream *stream)
@@ -564,6 +599,10 @@ static int initialize(le_audio_receive_cb recv_cb)
 	static bool initialized;
 	struct bt_audio_unicast_group_param group_params[CONFIG_BT_ISO_MAX_CHAN];
 
+	for (int i; i < CONFIG_BT_ISO_MAX_CHAN; i++) {
+		k_work_init_delayable(&stream_start_work[i], work_stream_start);
+	}
+
 #if (CONFIG_BT_VCS_CLIENT)
 	ret = ble_vcs_client_init();
 	if (ret) {
@@ -663,7 +702,7 @@ int le_audio_send(uint8_t const *const data, size_t size)
 		   BT_AUDIO_EP_STATE_STREAMING) {
 		ret = bt_iso_chan_get_tx_sync(audio_streams[AUDIO_CHANNEL_RIGHT].iso, &tx_info);
 	} else {
-		LOG_WRN("No headset in stream state");
+		LOG_DBG("No headset in stream state");
 		return -ECANCELED;
 	}
 	if (ret) {
@@ -677,12 +716,12 @@ int le_audio_send(uint8_t const *const data, size_t size)
 		audio_datapath_just_in_time_check_and_adjust(tx_info.ts);
 	}
 
-	ret = iso_stream_send(data, size / 2, AUDIO_CHANNEL_LEFT);
+	ret = iso_stream_send(data, sdu_size, AUDIO_CHANNEL_LEFT);
 	if (ret) {
 		LOG_DBG("Failed to send data to left channel");
 	}
 
-	ret = iso_stream_send(&data[size / 2], size / 2, AUDIO_CHANNEL_RIGHT);
+	ret = iso_stream_send(&data[sdu_size], sdu_size, AUDIO_CHANNEL_RIGHT);
 	if (ret) {
 		LOG_DBG("Failed to send data to right channel");
 	}
