@@ -74,7 +74,7 @@ static bool is_iso_buffer_full(uint8_t idx)
 	return false;
 }
 
-static int stream_index_get(struct bt_audio_stream *stream, int *index)
+static int stream_index_get(struct bt_audio_stream *stream, uint8_t *index)
 {
 	for (size_t i = 0U; i < ARRAY_SIZE(audio_streams); i++) {
 		if (&audio_streams[i] == stream) {
@@ -88,7 +88,7 @@ static int stream_index_get(struct bt_audio_stream *stream, int *index)
 	return -EINVAL;
 }
 
-static int headset_conn_index_get(struct bt_conn *conn, int *index)
+static int headset_conn_index_get(struct bt_conn *conn, uint8_t *index)
 {
 	for (size_t i = 0U; i < ARRAY_SIZE(headset_conn); i++) {
 		if (headset_conn[i] == conn) {
@@ -105,7 +105,7 @@ static int headset_conn_index_get(struct bt_conn *conn, int *index)
 static void stream_sent_cb(struct bt_audio_stream *stream)
 {
 	int ret;
-	int channel_index;
+	uint8_t channel_index;
 
 	ret = stream_index_get(stream, &channel_index);
 	if (ret) {
@@ -119,7 +119,7 @@ static void stream_configured_cb(struct bt_audio_stream *stream,
 				 const struct bt_codec_qos_pref *pref)
 {
 	int ret;
-	int channel_index;
+	uint8_t channel_index;
 
 	ret = stream_index_get(stream, &channel_index);
 	if (ret) {
@@ -146,8 +146,8 @@ static void stream_qos_set_cb(struct bt_audio_stream *stream)
 static void stream_enabled_cb(struct bt_audio_stream *stream)
 {
 	int ret;
-	int channel_index;
-	static int retry_times;
+	uint8_t channel_index;
+	static uint8_t retry_times;
 
 	ret = stream_index_get(stream, &channel_index);
 	if (ret) {
@@ -192,7 +192,7 @@ static void stream_disabled_cb(struct bt_audio_stream *stream)
 static void stream_stopped_cb(struct bt_audio_stream *stream)
 {
 	int ret;
-	int channel_index;
+	uint8_t channel_index;
 
 	LOG_INF("Audio Stream %p stopped", (void *)stream);
 
@@ -251,8 +251,8 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 			     struct bt_audio_discover_params *params)
 {
 	int ret = 0;
-	int ep_index = 0;
-	int conn_index = 0;
+	uint8_t ep_index = 0;
+	uint8_t conn_index = 0;
 
 	ret = headset_conn_index_get(conn, &conn_index);
 	if (ret) {
@@ -410,7 +410,7 @@ static void ble_acl_start_scan(void)
 static void connected_cb(struct bt_conn *conn, uint8_t err)
 {
 	int ret;
-	int conn_index;
+	uint8_t conn_index;
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
@@ -448,7 +448,7 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 {
 	int ret;
-	int conn_index;
+	uint8_t conn_index;
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	if (conn != headset_conn[AUDIO_CHANNEL_LEFT] && conn != headset_conn[AUDIO_CHANNEL_RIGHT]) {
@@ -475,7 +475,7 @@ static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 static int discover_sink(struct bt_conn *conn)
 {
 	int ret = 0;
-	int conn_index;
+	uint8_t conn_index;
 
 	ret = headset_conn_index_get(conn, &conn_index);
 	if (ret) {
