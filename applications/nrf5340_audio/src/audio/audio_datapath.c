@@ -123,6 +123,12 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_LOG_AUDIO_DATAPATH_LEVEL);
 /* How often to print underrun warning */
 #define UNDERRUN_LOG_INTERVAL_BLKS 5000
 
+/* Blinking period for synchronization LED */
+#define SYNC_LED_PERIOD_US 500000
+#define SYNC_LED_SEQ_NR_PERIOD (SYNC_LED_PERIOD_US / CONFIG_AUDIO_FRAME_DURATION_US)
+#define SYNC_LED_SEQ_NR_ON 0
+#define SYNC_LED_SEQ_NR_OFF (SYNC_LED_SEQ_NR_PERIOD / 2)
+
 enum drift_comp_state {
 	DRIFT_STATE_INIT, /* Waiting for data to be received */
 	DRIFT_STATE_CALIB, /* Calibrate and zero out local delay */
@@ -792,9 +798,24 @@ void audio_datapath_sdu_ref_update(uint32_t sdu_ref_us)
 	}
 }
 
-void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref_us, bool bad_frame,
-			       uint32_t recv_frame_ts_us)
+void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref_us,
+			       uint16_t seq_num, bool bad_frame, uint32_t recv_frame_ts_us)
 {
+	static uint32_t last_sync_led_sdu_ref_us;
+
+	/* Set compare value for blinking sync LED*/
+	if ((seq_num % SYNC_LED_SEQ_NR_PERIOD) == SYNC_LED_SEQ_NR_ON ||
+	    (seq_num % SYNC_LED_SEQ_NR_PERIOD) == SYNC_LED_SEQ_NR_OFF) {
+		uint32_t current_time_stamp = audio_sync_timer_curr_time_get();
+		uint32_t new_compare_time =
+			current_time_stamp + (sdu_ref_us - last_sync_led_sdu_ref_us);
+		bool clear =
+			((seq_num % SYNC_LED_SEQ_NR_PERIOD) == SYNC_LED_SEQ_NR_OFF ? true : false);
+
+		audio_sync_timer_sync_led_cmpr_time_set(new_compare_time, clear);
+		last_sync_led_sdu_ref_us = sdu_ref_us;
+	}
+
 	if (!ctrl_blk.stream_started) {
 		LOG_WRN("Stream not started");
 		return;
