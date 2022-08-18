@@ -861,6 +861,13 @@ Entering the DFU mode
 The |NCS| uses :ref:`SMP server and mcumgr <zephyr:device_mgmt>` as the DFU backend.
 Unlike the CIS and BIS modes for gateway and headsets, the DFU mode is advertising using the SMP server service.
 For this reason, to enter the DFU mode, you must long press **BTN 4** during each device startup to have the nRF5340 Audio DK enter the DFU mode.
+To distinguish the device role, DFU mode advertising name will be based on role and the pattern : ``CONFIG_BT_DEVICE_NAME`` _ **ROLE** _DFU.
+The name will look like:
+
+* BIS Gateway: Broadcast Audio Source_GW_DFU
+* BIS Headset: Broadcast Audio Sink_HL_DFU
+* CIS Gateway: NRF5340_AUDIO_GW_DFU
+* CIS Headset: NRF5340_AUDIO_HL_DFU
 
 .. _nrf53_audio_app_building:
 
