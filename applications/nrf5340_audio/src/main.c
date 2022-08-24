@@ -212,7 +212,7 @@ void main(void)
 	ERR_CHK(ret);
 
 #if defined(CONFIG_AUDIO_DFU_ENABLE)
-	/* Check DFU BTN before Initialize BLE */
+	/* Check DFU button before initializing BLE */
 	dfu_entry_check();
 #endif
 

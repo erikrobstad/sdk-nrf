@@ -17,6 +17,6 @@ target_sources(app PRIVATE
 
 if (CONFIG_AUDIO_DFU_ENABLE)
 	target_sources(app PRIVATE
-			    ${CMAKE_CURRENT_SOURCE_DIR}/dfu_entry.c
+			${CMAKE_CURRENT_SOURCE_DIR}/dfu_entry.c
 	)
 endif()

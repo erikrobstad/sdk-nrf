@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
 #
 # Copyright (c) 2022 Nordic Semiconductor ASA
 #
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
 
 """
 Generate fw_info for B0N container from .config
@@ -34,7 +34,7 @@ def get_fw_info(input_hex, offset, magic_value, fw_version, fw_valid_val):
 
 def inject_fw_info(input_file, offset, output_hex, magic_value, fw_version, fw_valid_val):
     ih = IntelHex(input_file)
-    # OBJCOPY incorrectly inserts x86 specific records, remove the start_addr as it is wrong.
+    # OBJCOPY incorrectly inserts x86 specific records, remove the start_addr as it is wrong
     ih.start_addr = None
 
     # Parse comma-separated string of uint32s into hex string. Each is encoded in little-endian byte order

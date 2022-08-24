@@ -9,15 +9,15 @@ config AUDIO_DFU
 	range 0 2
 	default 0
 	help
-	  Setting this variable to 0 disables DFU.
-	  Setting this variable to 1 selects internal flash single image DFU.
-	  Setting this variable to 2 selects external flash multi images DFU.
+	  	Setting this variable to 0 disables DFU.
+	  	Setting this variable to 1 selects internal flash single image DFU.
+	  	Setting this variable to 2 selects external flash multi images DFU.
 
 config B0N_MINIMAL
-	bool "B0N use minimal or not"
+	bool "B0N use minimal size or not"
 	default n
 	help
-	  Let CMakelist choose corresponding overlay file
+	  	Let CMakelist choose corresponding overlay file
 
 if AUDIO_DFU = 0
 
@@ -111,10 +111,6 @@ config MCUBOOT_IMAGE_VERSION
 	string
 	default "0.0.0+0"
 
-config LOG_DFU_ENTRY_LEVEL
-	int "Log level for DFU entry module"
-	default 3
-
 config BT_DEVICE_NAME_DYNAMIC
 	bool
 	default y
@@ -127,7 +123,11 @@ config BT_DEVICE_NAME_MAX
 	int
 	default 30
 
-endif # AUDIO_DFU = 1 and AUDIO_DFU = 2 (INTERNAL/EXTERNAL)
+config LOG_DFU_ENTRY_LEVEL
+	int "Log level for DFU entry module"
+	default 3
+
+endif # AUDIO_DFU = 1 or AUDIO_DFU = 2 (INTERNAL or EXTERNAL)
 
 if AUDIO_DFU = 1
 
@@ -152,7 +152,7 @@ config PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY
 	bool
 	default y
 
-#External Flash
+# External Flash
 config SPI_NOR
 	bool
 	default y

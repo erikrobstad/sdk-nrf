@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
 #
 # Copyright (c) 2022 Nordic Semiconductor ASA
 #
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
 
 """
 Sign PCFT BT Controller with B0N
@@ -41,13 +41,14 @@ def sign(orig_pcft_hex, build_dir):
     """ A function to combine and sign PCFT"""
 
     if os.name == 'nt':
-        folder_slash ='\\'
+        folder_slash = '\\'
     else:
-        folder_slash ='/'
+        folder_slash = '/'
 
     # Make sure we input build_dir as absolute path
     indices = [i for i, c in enumerate(build_dir) if c == folder_slash]
-    final_file_prefix = build_dir[indices[-2]+1:].replace(folder_slash, '_')+'_'
+    final_file_prefix = build_dir[indices[-2] +
+                                  1:].replace(folder_slash, '_')+'_'
 
     # RETEIVE setting value from .config
     # "${ZEPHYR_BASE}/../bootloader/mcuboot/root-rsa-2048.pem"
@@ -55,10 +56,10 @@ def sign(orig_pcft_hex, build_dir):
     mcuboot_rsa_key = awklike('CONFIG_BOOT_SIGNATURE_KEY_FILE=', build_dir +
                               '/mcuboot/zephyr/.config')
 
-    #'\\' is used for Windows, '/' is used for other Operating Systems like Linux.
-    if ('/' in mcuboot_rsa_key) or ('\\' in  mcuboot_rsa_key):
+    # '\\' is used for Windows, '/' is used for other Operating Systems like Linux
+    if ('/' in mcuboot_rsa_key) or ('\\' in mcuboot_rsa_key):
         print('absolute path')
-        # Zephyr script convert folder separator to '/'. Should do the same here no matter Windows or not.
+        # Zephyr script convert folder separator to '/'. Should do the same here no matter Windows or not
         if folder_slash in mcuboot_rsa_key:
             mcuboot_rsa_key.replace(folder_slash, '/')
     else:

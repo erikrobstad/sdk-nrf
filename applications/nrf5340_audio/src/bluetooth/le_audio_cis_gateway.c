@@ -618,7 +618,6 @@ static struct bt_conn_cb conn_callbacks = {
 	.connected = connected_cb,
 	.disconnected = disconnected_cb,
 	.security_changed = security_changed_cb,
-
 };
 
 static int iso_stream_send(uint8_t const *const data, size_t size, uint8_t iso_chan_idx)

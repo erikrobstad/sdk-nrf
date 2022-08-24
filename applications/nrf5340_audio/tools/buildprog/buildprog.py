@@ -157,7 +157,7 @@ def __build_module(build_config, options):
             {TARGET_CORE_APP_FOLDER}/dfu/bin/ble5-ctr-rpmsg_shifted.hex -b {dest_folder}"
         ret_val = os.system(pcft_sign_cmd)
         if ret_val:
-            raise Exception("generate pcft+b0n error: " + str(ret_val))
+            raise Exception("Generate pcft+b0n error: " + str(ret_val))
 
 
 def __find_snr():
@@ -198,12 +198,15 @@ def __populate_hex_paths(dev, options):
         if options.mcuboot != '':
             temp_dest_folder = str(temp_dest_folder)
             if os.name == 'nt':
-                folder_slash ='\\'
+                folder_slash = '\\'
             else:
-                folder_slash ='/'
-            indices = [i for i, c in enumerate(temp_dest_folder) if c == folder_slash]
-            final_file_prefix = temp_dest_folder[indices[-2]+1:].replace(folder_slash, '_')+'_'
-            dev.hex_path_net = dest_folder / f"{final_file_prefix}pcft_CPUNET.hex"
+                folder_slash = '/'
+            indices = [i for i, c in enumerate(
+                temp_dest_folder) if c == folder_slash]
+            final_file_prefix = temp_dest_folder[indices[-2] +
+                                                 1:].replace(folder_slash, '_')+'_'
+            dev.hex_path_net = dest_folder / \
+                f"{final_file_prefix}pcft_CPUNET.hex"
         else:
             for hex_file in reversed(hex_files_found):
                 if "pcft_CPUNET" in hex_file.name:
@@ -221,7 +224,7 @@ def __populate_hex_paths(dev, options):
 
 def __finish(device_list):
     """Finish script. Print report"""
-    print("build_prog.py finished. Report:")
+    print("buildprog.py finished. Report:")
     __print_dev_conf(device_list)
     exit(0)
 
@@ -297,14 +300,14 @@ def __main():
         default=False,
         help="Recover device if programming fails",
     )
-    # DFU relative option
+    # Options related to DFU
     parser.add_argument(
         "-M",
         "--min_b0n",
         dest="min_b0n",
         action='store_true',
         default=False,
-        help="net core bootloader use minimal size build",
+        help="Network core bootloader use minimal size build",
     )
     parser.add_argument(
         "-m",
@@ -312,7 +315,7 @@ def __main():
         required=("-M" in sys.argv or "--min_b0n" in sys.argv),
         choices=["external", "internal"],
         default='',
-        help="MCUBOOT with external, internal flash",)
+        help="MCUboot use external or internal flash",)
     options = parser.parse_args(args=sys.argv[1:])
 
     # Post processing for Enums

@@ -10,7 +10,6 @@ if (CONFIG_AUDIO_DFU EQUAL 1)
     set(mcuboot_OVERLAY_CONFIG
     ${CMAKE_CURRENT_LIST_DIR}/dfu/conf/overlay-mcuboot.conf
     )
-
 endif()
 
 if (CONFIG_AUDIO_DFU EQUAL 2)

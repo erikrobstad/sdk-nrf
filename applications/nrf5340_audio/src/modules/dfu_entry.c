@@ -40,27 +40,26 @@ LOG_MODULE_REGISTER(dfu, CONFIG_LOG_DFU_ENTRY_LEVEL);
 static struct bt_le_adv_param adv_param;
 static const struct bt_data ad_peer[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA_BYTES(BT_DATA_UUID128_ALL,
-		      0x84, 0xaa, 0x60, 0x74, 0x52, 0x8a, 0x8b, 0x86,
-		      0xd3, 0x4c, 0xb7, 0x1d, 0x1d, 0xdc, 0x53, 0x8d),
+	BT_DATA_BYTES(BT_DATA_UUID128_ALL, 0x84, 0xaa, 0x60, 0x74, 0x52, 0x8a, 0x8b, 0x86, 0xd3,
+		      0x4c, 0xb7, 0x1d, 0x1d, 0xdc, 0x53, 0x8d),
 };
 
 /* MCUMGR related functions */
 static void mcumgr_register(void)
 {
-	/* Enable MCUMGR */
-	#ifdef CONFIG_MCUMGR_CMD_OS_MGMT
-		os_mgmt_register_group();
-	#endif
-	#ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
-		img_mgmt_register_group();
-	#endif
-	#ifdef CONFIG_MCUMGR_CMD_STAT_MGMT
-		stat_mgmt_register_group();
-	#endif
-	#ifdef CONFIG_MCUMGR_SMP_BT
-		smp_bt_register();
-	#endif
+/* Enable MCUMGR */
+#ifdef CONFIG_MCUMGR_CMD_OS_MGMT
+	os_mgmt_register_group();
+#endif
+#ifdef CONFIG_MCUMGR_CMD_IMG_MGMT
+	img_mgmt_register_group();
+#endif
+#ifdef CONFIG_MCUMGR_CMD_STAT_MGMT
+	stat_mgmt_register_group();
+#endif
+#ifdef CONFIG_MCUMGR_SMP_BT
+	smp_bt_register();
+#endif
 }
 
 static void smp_adv(void)
@@ -69,7 +68,7 @@ static void smp_adv(void)
 
 	ret = bt_le_adv_start(&adv_param, ad_peer, ARRAY_SIZE(ad_peer), NULL, 0);
 	if (ret) {
-		LOG_ERR("SMP_SVR Advertising failed to start (ret %d)", ret);
+		LOG_ERR("SMP_SVR advertising failed to start (ret %d)", ret);
 		return;
 	}
 
@@ -79,12 +78,12 @@ static void smp_adv(void)
 /* These callbacks are to override callback registed in module le_audio_ */
 static void dfu_connected_cb(struct bt_conn *conn, uint8_t err)
 {
-	LOG_INF("SMP connected\n");
+	LOG_INF("SMP connected");
 }
 
 static void dfu_disconnected_cb(struct bt_conn *conn, uint8_t reason)
 {
-	LOG_INF("SMP disconnected %d\n", reason);
+	LOG_INF("SMP disconnected (ret %d)", reason);
 }
 
 static struct bt_conn_cb dfu_conn_callbacks = {
@@ -94,7 +93,7 @@ static struct bt_conn_cb dfu_conn_callbacks = {
 
 static void dfu_set_bt_name(void)
 {
-	char name[CONFIG_BT_DEVICE_NAME_MAX] = {0};
+	char name[CONFIG_BT_DEVICE_NAME_MAX] = { 0 };
 
 	strlcpy(name, CONFIG_BT_DEVICE_NAME, CONFIG_BT_DEVICE_NAME_MAX);
 	strlcat(name, "_", CONFIG_BT_DEVICE_NAME_MAX);
@@ -141,7 +140,7 @@ void dfu_entry_check(void)
 	}
 
 	if (pressed) {
-		LOG_INF("Enter SMP_SVR service only status");
+		LOG_INF("Enter SMP_SVR service only mode");
 		ret = ble_core_init(on_ble_core_ready_dfu_entry);
 		ERR_CHK(ret);
 

@@ -8,9 +8,8 @@
 #define _DFU_ENTRY_H_
 
 /**
- * @brief Check Btn pressed status to advertise SMP_SVR service only
+ * @brief Check button pressed status to advertise SMP_SVR service only
  */
-
 void dfu_entry_check(void);
 
 #endif /* _DFU_ENTRY_H_ */
