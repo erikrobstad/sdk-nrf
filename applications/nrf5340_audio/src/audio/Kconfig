@@ -183,8 +183,9 @@ config BUF_BLE_RX_PACKET_NUM
 		gaps due to BLE retransmits.
 
 config STREAM_BIDIRECTIONAL
-	bool "Enable bi-directional stream - Currently not supported"
-	default n
+	depends on TRANSPORT_CIS
+	bool "Enable bi-directional stream"
+	default y
 	help
 		Bi-directional stream enables encoder and decoder on both sides,
 		and one device can both send and receive audio.

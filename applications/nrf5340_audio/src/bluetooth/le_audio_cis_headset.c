@@ -96,7 +96,6 @@ static void advertising_process(struct k_work *work)
 		adv_param.options |= BT_LE_ADV_OPT_DIR_ADDR_RPA;
 
 		ret = bt_le_adv_start(&adv_param, NULL, 0, NULL, 0);
-
 		if (ret) {
 			LOG_ERR("Directed advertising failed to start");
 			return;
@@ -111,7 +110,6 @@ static void advertising_process(struct k_work *work)
 		adv_param.options |= BT_LE_ADV_OPT_ONE_TIME;
 
 		ret = bt_le_adv_start(&adv_param, ad_peer, ARRAY_SIZE(ad_peer), NULL, 0);
-
 		if (ret) {
 			LOG_ERR("Advertising failed to start (ret %d)", ret);
 			return;
@@ -363,6 +361,7 @@ static int initialize(le_audio_receive_cb recv_cb)
 			/* Channel is not assigned yet: use default */
 			channel = AUDIO_CHANNEL_DEFAULT;
 		}
+
 		if (channel == AUDIO_CH_L) {
 			ret = bt_audio_capability_set_location(BT_AUDIO_DIR_SINK,
 							       BT_AUDIO_LOCATION_FRONT_LEFT);
@@ -374,6 +373,7 @@ static int initialize(le_audio_receive_cb recv_cb)
 			LOG_ERR("Location set failed");
 			return ret;
 		}
+
 		ret = bt_audio_capability_register(&caps);
 		if (ret) {
 			LOG_ERR("Capability register failed");
@@ -392,6 +392,7 @@ static int initialize(le_audio_receive_cb recv_cb)
 		k_work_init(&adv_work, advertising_process);
 		initialized = true;
 	}
+
 	return 0;
 }
 

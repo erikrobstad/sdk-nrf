@@ -448,6 +448,7 @@ static bool ble_acl_gateway_all_links_connected(void)
 			return false;
 		}
 	}
+
 	return true;
 }
 
@@ -554,6 +555,7 @@ static void on_device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
 		if (bonded_num) {
 			bt_foreach_bond(BT_ID_DEFAULT, bond_connect, (void *)addr);
 		}
+
 		return;
 	} else if (type == BT_GAP_ADV_TYPE_ADV_IND) {
 		/* Note: May lead to connection creation */
@@ -732,6 +734,7 @@ static int initialize(le_audio_receive_cb recv_cb)
 		LOG_ERR("Failed to register client callbacks: %d", ret);
 		return ret;
 	}
+
 #if (CONFIG_BT_VCS_CLIENT)
 	ret = ble_vcs_client_init();
 	if (ret) {
@@ -749,15 +752,17 @@ static int initialize(le_audio_receive_cb recv_cb)
 			group_params[i].qos = &lc3_preset_nrf5340.qos;
 			group_params[i].dir = BT_AUDIO_DIR_SINK;
 		}
+
 		ret = bt_audio_unicast_group_create(group_params, CONFIG_BT_ISO_MAX_CHAN,
 						    &unicast_group);
-
 		if (ret) {
 			LOG_ERR("Failed to create unicast group: %d", ret);
 			return ret;
 		}
+
 		initialized = true;
 	}
+
 	return 0;
 }
 
@@ -883,7 +888,7 @@ int le_audio_send(uint8_t const *const data, size_t size)
 	}
 
 	if (tx_info.ts != 0 && !ret) {
-#if (CONFIG_AUDIO_SOURCE_I2S)
+#if ((CONFIG_AUDIO_SOURCE_I2S) && !(CONFIG_STREAM_BIDIRECTIONAL))
 		audio_datapath_sdu_ref_update(tx_info.ts);
 #endif
 		audio_datapath_just_in_time_check_and_adjust(tx_info.ts);
