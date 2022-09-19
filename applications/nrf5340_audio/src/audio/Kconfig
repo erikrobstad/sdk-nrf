@@ -201,7 +201,7 @@ config LOG_AUDIO_SYSTEM_LEVEL
 
 config LOG_STREAMCTRL_LEVEL
 	int "Log level for streamctrl"
-	default 3
+	default 4
 
 config LOG_AUDIO_DATAPATH_LEVEL
 	int "Log level for audio_datapath"
@@ -235,8 +235,8 @@ menu "Stack sizes"
 
 config ENCODER_STACK_SIZE
 	int "Stack size for encoder thread"
-	default 6750 if AUDIO_BIT_DEPTH_16
-	default 11264 if AUDIO_BIT_DEPTH_24 || AUDIO_BIT_DEPTH_32
+	default 7500 if AUDIO_BIT_DEPTH_16
+	default 11264 if AUDIO_BIT_DEPTH_24 || AUDIO_BIT_DEPTH_32 # TODO: Check if stack size work for these bit depths
 
 config AUDIO_DATAPATH_STACK_SIZE
 	int "Stack size for audio datapath thread"

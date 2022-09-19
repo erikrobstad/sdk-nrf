@@ -171,7 +171,7 @@ menu "Log levels"
 
 config LOG_BLE_LEVEL
 	int "Log level for Bluetooth related files"
-	default 3
+	default 4
 
 config LOG_AUDIO_SERVICES_LEVEL
 	int "Log level for LE Audio services"

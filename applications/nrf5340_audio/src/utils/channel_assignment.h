@@ -26,6 +26,7 @@ static const char GW_TAG[] = "GW";
 enum audio_channel {
 	AUDIO_CH_L,
 	AUDIO_CH_R,
+	AUDIO_CH_RETURN, // TODO: THIS IS MOST LIKELY WRONG PLACE #if CONFIG_BIDIRECTIONAL here?
 	AUDIO_CH_NUM,
 };
 
