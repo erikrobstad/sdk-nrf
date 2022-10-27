@@ -937,6 +937,12 @@ static int initialize(le_audio_receive_cb recv_cb)
 	}
 #endif /* (CONFIG_BT_VCS_CLIENT) */
 
+	ret = ble_mcs_server_init();
+	if (ret) {
+		LOG_ERR("MCS server init failed");
+		return ret;
+	}
+
 	receive_cb = recv_cb;
 
 	bt_conn_cb_register(&conn_callbacks);

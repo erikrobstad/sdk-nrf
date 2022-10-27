@@ -300,3 +300,96 @@ int ble_vcs_server_init(void)
 
 	return 0;
 }
+
+#include <zephyr/bluetooth/audio/media_proxy.h>
+#include <zephyr/bluetooth/audio/mcc.h>
+#include <zephyr/bluetooth/audio/mcs.h>
+
+static void mcc_discover_mcs_cb(struct bt_conn *conn, int err)
+{
+	LOG_INF("mcc_discover_mcs_cb");
+
+	if (err) {
+		LOG_ERR("Discovery of MCS failed (%d)", err);
+		return;
+	}
+}
+
+static void mcc_send_command_cb(struct bt_conn *conn, int err, const struct mpl_cmd *cmd)
+{
+	LOG_INF("mcc_send_command_cb");
+
+	if (err) {
+		LOG_ERR("Command send failed (%d) - opcode: %u, param: %d", err, cmd->opcode,
+			cmd->param);
+		return;
+	}
+}
+
+static void mcc_cmd_ntf_cb(struct bt_conn *conn, int err, const struct mpl_cmd_ntf *ntf)
+{
+	LOG_INF("mcc_cmd_ntf_cb");
+
+	if (err) {
+		LOG_ERR("Command notification error (%d) - opcode: %u, result: %u", err,
+			ntf->requested_opcode, ntf->result_code);
+		return;
+	}
+
+	LOG_INF("result_code: %d", ntf->result_code);
+}
+
+static struct bt_mcc_cb mcc_cb;
+
+int ble_mcs_client_init(void)
+{
+	mcc_cb.discover_mcs = mcc_discover_mcs_cb;
+	mcc_cb.send_cmd = mcc_send_command_cb;
+	mcc_cb.cmd_ntf = mcc_cmd_ntf_cb;
+
+	return bt_mcc_init(&mcc_cb);
+}
+
+int ble_mcs_server_init(void)
+{
+	return media_proxy_pl_init();
+}
+
+int ble_mcs_discover(struct bt_conn *conn)
+{
+	return bt_mcc_discover_mcs(conn, true);
+}
+
+int ble_mcs_play(struct bt_conn *conn)
+{
+	int ret;
+	struct mpl_cmd cmd;
+
+	cmd.opcode = BT_MCS_OPC_PLAY;
+	cmd.use_param = false;
+
+	ret = bt_mcc_send_cmd(conn, &cmd);
+	if (ret) {
+		LOG_ERR("Failed to send play command: %d", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+int ble_mcs_pause(struct bt_conn *conn)
+{
+	int ret;
+	struct mpl_cmd cmd;
+
+	cmd.opcode = BT_MCS_OPC_PAUSE;
+	cmd.use_param = false;
+
+	ret = bt_mcc_send_cmd(conn, &cmd);
+	if (ret) {
+		LOG_ERR("Failed to send pause command: %d", ret);
+		return ret;
+	}
+
+	return 0;
+}

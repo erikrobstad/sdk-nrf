@@ -367,6 +367,7 @@ static void stream_stop_cb(struct bt_audio_stream *stream)
 
 static void connected_cb(struct bt_conn *conn, uint8_t err)
 {
+	int ret = 0;
 	char addr[BT_ADDR_LE_STR_LEN];
 
 	if (err) {
@@ -378,6 +379,13 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 
 	LOG_INF("Connected: %s", addr);
 	default_conn = bt_conn_ref(conn);
+
+	ret = ble_mcs_discover(default_conn);
+	if (ret) {
+		LOG_ERR("Failed to start discovery of MCS: %d", ret);
+	} else {
+		LOG_INF("MCS successfully discovered");
+	}
 }
 
 static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
@@ -421,6 +429,12 @@ static int initialize(le_audio_receive_cb recv_cb)
 			return ret;
 		}
 #endif /* (CONFIG_BT_VCS) */
+
+		ret = ble_mcs_client_init();
+		if (ret) {
+			LOG_ERR("MCS client init failed");
+			return ret;
+		}
 
 		receive_cb = recv_cb;
 		channel_assignment_get(&channel);
@@ -551,32 +565,12 @@ int le_audio_volume_mute(void)
 
 int le_audio_play(void)
 {
-	int ret;
-
-	ret = bt_audio_capability_set_available_contexts(
-		BT_AUDIO_DIR_SINK, BT_AUDIO_CONTEXT_TYPE_MEDIA | BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED);
-
-	if (ret) {
-		LOG_ERR("Available context set failed");
-		return ret;
-	}
-
-	return 0;
+	return ble_mcs_play(default_conn);
 }
 
 int le_audio_pause(void)
 {
-	int ret;
-
-	ret = bt_audio_capability_set_available_contexts(BT_AUDIO_DIR_SINK,
-							 BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED);
-
-	if (ret) {
-		LOG_ERR("Available context set failed");
-		return ret;
-	}
-
-	return 0;
+	return ble_mcs_pause(default_conn);
 }
 
 int le_audio_send(uint8_t const *const data, size_t size)
