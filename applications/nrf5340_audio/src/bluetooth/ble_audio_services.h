@@ -100,14 +100,16 @@ int ble_vcs_volume_unmute(void);
  */
 int ble_vcs_server_init(void);
 
+typedef void (*ble_play_pause_cb)(bool play);
+
+int ble_mcs_server_play_pause(void);
+
 int ble_mcs_client_init(void);
 
-int ble_mcs_server_init(void);
+int ble_mcs_server_init(ble_play_pause_cb play_pause_cb);
 
 int ble_mcs_discover(struct bt_conn *conn);
 
-int ble_mcs_play(struct bt_conn *conn);
-
-int ble_mcs_pause(struct bt_conn *conn);
+int ble_mcs_play_pause(struct bt_conn *conn);
 
 #endif /* _BLE_AUDIO_SERVICES_H_ */

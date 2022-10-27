@@ -563,14 +563,9 @@ int le_audio_volume_mute(void)
 	return 0;
 }
 
-int le_audio_play(void)
+int le_audio_play_pause(void)
 {
-	return ble_mcs_play(default_conn);
-}
-
-int le_audio_pause(void)
-{
-	return ble_mcs_pause(default_conn);
+	return ble_mcs_play_pause(default_conn);
 }
 
 int le_audio_send(uint8_t const *const data, size_t size)

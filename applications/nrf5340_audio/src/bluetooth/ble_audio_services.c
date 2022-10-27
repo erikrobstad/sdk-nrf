@@ -10,6 +10,9 @@
 #include <zephyr/types.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/audio/vcs.h>
+#include <zephyr/bluetooth/audio/media_proxy.h>
+#include <zephyr/bluetooth/audio/mcs.h>
+#include <zephyr/bluetooth/audio/mcc.h>
 
 #include "macros_common.h"
 #include "hw_codec.h"
@@ -21,6 +24,13 @@ LOG_MODULE_REGISTER(ble_audio_services, CONFIG_LOG_AUDIO_SERVICES_LEVEL);
 #define VOLUME_STEP 16
 
 static struct bt_vcs *vcs;
+
+static struct media_proxy_ctrl_cbs cbs;
+static uint8_t media_player_state;
+
+static struct bt_mcc_cb mcc_cb;
+static struct media_player *local_player;
+static ble_play_pause_cb le_audio_play_pause_cb;
 
 #if (CONFIG_BT_VCS_CLIENT)
 static struct bt_vcs *vcs_client_peer[CONFIG_BT_MAX_CONN];
@@ -301,13 +311,9 @@ int ble_vcs_server_init(void)
 	return 0;
 }
 
-#include <zephyr/bluetooth/audio/media_proxy.h>
-#include <zephyr/bluetooth/audio/mcc.h>
-#include <zephyr/bluetooth/audio/mcs.h>
-
 static void mcc_discover_mcs_cb(struct bt_conn *conn, int err)
 {
-	LOG_INF("mcc_discover_mcs_cb");
+	LOG_DBG("mcc_discover_mcs_cb");
 
 	if (err) {
 		LOG_ERR("Discovery of MCS failed (%d)", err);
@@ -317,7 +323,7 @@ static void mcc_discover_mcs_cb(struct bt_conn *conn, int err)
 
 static void mcc_send_command_cb(struct bt_conn *conn, int err, const struct mpl_cmd *cmd)
 {
-	LOG_INF("mcc_send_command_cb");
+	LOG_DBG("mcc_send_command_cb");
 
 	if (err) {
 		LOG_ERR("Command send failed (%d) - opcode: %u, param: %d", err, cmd->opcode,
@@ -328,31 +334,118 @@ static void mcc_send_command_cb(struct bt_conn *conn, int err, const struct mpl_
 
 static void mcc_cmd_ntf_cb(struct bt_conn *conn, int err, const struct mpl_cmd_ntf *ntf)
 {
-	LOG_INF("mcc_cmd_ntf_cb");
+	LOG_DBG("mcc_cmd_ntf_cb");
 
 	if (err) {
 		LOG_ERR("Command notification error (%d) - opcode: %u, result: %u", err,
 			ntf->requested_opcode, ntf->result_code);
 		return;
 	}
-
-	LOG_INF("result_code: %d", ntf->result_code);
 }
 
-static struct bt_mcc_cb mcc_cb;
+static void mcc_read_media_state_cb(struct bt_conn *conn, int err, uint8_t state)
+{
+	if (err) {
+		LOG_ERR("Media State read failed (%d)", err);
+		return;
+	}
+
+	media_player_state = state;
+}
+
+static void command_recv_cb(struct media_player *plr, int err, const struct mpl_cmd_ntf *cmd_ntf)
+{
+	if (err) {
+		LOG_ERR("Command failed (%d)", err);
+		return;
+	}
+
+	LOG_DBG("Received opcode: %d", cmd_ntf->requested_opcode);
+
+	if (cmd_ntf->requested_opcode == BT_MCS_OPC_PLAY) {
+		le_audio_play_pause_cb(true);
+	} else if (cmd_ntf->requested_opcode == BT_MCS_OPC_PAUSE) {
+		le_audio_play_pause_cb(false);
+	} else {
+		LOG_WRN("Unsupported opcode");
+	}
+}
+
+static void media_state_cb(struct media_player *plr, int err, uint8_t state)
+{
+	if (err) {
+		LOG_ERR("Media state failed (%d)", err);
+		return;
+	}
+
+	media_player_state = state;
+}
+
+static void local_player_instance_cb(struct media_player *player, int err)
+{
+	if (err) {
+		LOG_ERR("Local player instance failed (%d)", err);
+		return;
+	}
+
+	LOG_DBG("Received local player");
+
+	local_player = player;
+}
+
+int ble_mcs_server_play_pause(void)
+{
+	media_proxy_ctrl_get_media_state(local_player);
+
+	struct mpl_cmd cmd;
+
+	if (media_player_state == BT_MCS_MEDIA_STATE_PLAYING) {
+		cmd.opcode = MEDIA_PROXY_OP_PAUSE;
+	} else if (media_player_state == BT_MCS_MEDIA_STATE_PAUSED) {
+		cmd.opcode = MEDIA_PROXY_OP_PLAY;
+	} else {
+		LOG_ERR("Invalid state: %d", media_player_state);
+		return -ECANCELED;
+	}
+	cmd.use_param = false;
+
+	media_proxy_ctrl_send_command(local_player, &cmd);
+	return 0;
+}
 
 int ble_mcs_client_init(void)
 {
 	mcc_cb.discover_mcs = mcc_discover_mcs_cb;
 	mcc_cb.send_cmd = mcc_send_command_cb;
 	mcc_cb.cmd_ntf = mcc_cmd_ntf_cb;
+	mcc_cb.read_media_state = mcc_read_media_state_cb;
 
 	return bt_mcc_init(&mcc_cb);
 }
 
-int ble_mcs_server_init(void)
+int ble_mcs_server_init(ble_play_pause_cb play_pause_cb)
 {
-	return media_proxy_pl_init();
+	int ret;
+
+	ret = media_proxy_pl_init();
+	if (ret) {
+		LOG_ERR("Failed to init media proxy: %d", ret);
+		return ret;
+	}
+
+	cbs.local_player_instance = local_player_instance_cb;
+	cbs.command_recv = command_recv_cb;
+	cbs.media_state_recv = media_state_cb;
+
+	ret = media_proxy_ctrl_register(&cbs);
+	if (ret) {
+		LOG_ERR("Could not init mpl: %d", ret);
+		return ret;
+	}
+
+	le_audio_play_pause_cb = play_pause_cb;
+
+	return 0;
 }
 
 int ble_mcs_discover(struct bt_conn *conn)
@@ -360,34 +453,25 @@ int ble_mcs_discover(struct bt_conn *conn)
 	return bt_mcc_discover_mcs(conn, true);
 }
 
-int ble_mcs_play(struct bt_conn *conn)
+int ble_mcs_play_pause(struct bt_conn *conn)
 {
 	int ret;
 	struct mpl_cmd cmd;
 
-	cmd.opcode = BT_MCS_OPC_PLAY;
-	cmd.use_param = false;
-
-	ret = bt_mcc_send_cmd(conn, &cmd);
-	if (ret) {
-		LOG_ERR("Failed to send play command: %d", ret);
-		return ret;
+	if (media_player_state == BT_MCS_MEDIA_STATE_PLAYING) {
+		cmd.opcode = BT_MCS_OPC_PAUSE;
+	} else if (media_player_state == BT_MCS_MEDIA_STATE_PAUSED) {
+		cmd.opcode = BT_MCS_OPC_PLAY;
+	} else {
+		LOG_ERR("Invalid state: %d", media_player_state);
+		return -ECANCELED;
 	}
 
-	return 0;
-}
-
-int ble_mcs_pause(struct bt_conn *conn)
-{
-	int ret;
-	struct mpl_cmd cmd;
-
-	cmd.opcode = BT_MCS_OPC_PAUSE;
 	cmd.use_param = false;
 
 	ret = bt_mcc_send_cmd(conn, &cmd);
 	if (ret) {
-		LOG_ERR("Failed to send pause command: %d", ret);
+		LOG_ERR("Failed to send play/pause command: %d", ret);
 		return ret;
 	}
 

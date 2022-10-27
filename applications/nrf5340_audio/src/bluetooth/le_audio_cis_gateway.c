@@ -192,16 +192,6 @@ static void available_contexts_cb(struct bt_conn *conn, enum bt_audio_context sn
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	LOG_DBG("conn: %s, snk ctx %d src ctx %d\n", addr, snk_ctx, src_ctx);
-
-	if (!(BT_AUDIO_CONTEXT_TYPE_MEDIA & snk_ctx)) {
-		if (audio_streams[index].ep->status.state == BT_AUDIO_EP_STATE_STREAMING) {
-			le_audio_pause();
-		}
-	} else {
-		if (audio_streams[index].ep->status.state == BT_AUDIO_EP_STATE_QOS_CONFIGURED) {
-			le_audio_play();
-		}
-	}
 }
 
 const struct bt_audio_unicast_client_cb unicast_client_cbs = {
@@ -252,6 +242,8 @@ static void stream_qos_set_cb(struct bt_audio_stream *stream)
 		if (ret) {
 			LOG_ERR("Unable to enable stream: %d", ret);
 		}
+
+		ble_mcs_server_play_pause();
 	}
 }
 
@@ -842,6 +834,61 @@ static struct bt_conn_cb conn_callbacks = {
 
 };
 
+static void mcs_play_pause_cb(bool play)
+{
+	int ret;
+
+	LOG_DBG("MCS CB");
+
+	if (play) {
+		playing_state = true;
+
+		if (audio_streams[AUDIO_CH_L].ep->status.state ==
+		    BT_AUDIO_EP_STATE_QOS_CONFIGURED) {
+			ret = bt_audio_stream_enable(&audio_streams[AUDIO_CH_L],
+						     lc3_preset_nrf5340.codec.meta,
+						     lc3_preset_nrf5340.codec.meta_count);
+
+			if (ret) {
+				LOG_WRN("Failed to enable left stream");
+			}
+		}
+
+#if !CONFIG_STREAM_BIDIRECTIONAL
+		if (audio_streams[AUDIO_CH_R].ep->status.state ==
+		    BT_AUDIO_EP_STATE_QOS_CONFIGURED) {
+			ret = bt_audio_stream_enable(&audio_streams[AUDIO_CH_R],
+						     lc3_preset_nrf5340.codec.meta,
+						     lc3_preset_nrf5340.codec.meta_count);
+
+			if (ret) {
+				LOG_WRN("Failed to enable right stream");
+			}
+		}
+#endif /* !CONFIG_STREAM_BIDIRECTIONAL */
+	} else {
+		playing_state = false;
+
+		if (audio_streams[AUDIO_CH_L].ep->status.state == BT_AUDIO_EP_STATE_STREAMING) {
+			ret = bt_audio_stream_disable(&audio_streams[AUDIO_CH_L]);
+
+			if (ret) {
+				LOG_WRN("Failed to disable left stream");
+			}
+		}
+
+#if !CONFIG_STREAM_BIDIRECTIONAL
+		if (audio_streams[AUDIO_CH_R].ep->status.state == BT_AUDIO_EP_STATE_STREAMING) {
+			ret = bt_audio_stream_disable(&audio_streams[AUDIO_CH_R]);
+
+			if (ret) {
+				LOG_WRN("Failed to disable right stream");
+			}
+		}
+#endif /* !CONFIG_STREAM_BIDIRECTIONAL */
+	}
+}
+
 static int iso_stream_send(uint8_t const *const data, size_t size, uint8_t iso_chan_idx)
 {
 	int ret;
@@ -937,7 +984,7 @@ static int initialize(le_audio_receive_cb recv_cb)
 	}
 #endif /* (CONFIG_BT_VCS_CLIENT) */
 
-	ret = ble_mcs_server_init();
+	ret = ble_mcs_server_init(mcs_play_pause_cb);
 	if (ret) {
 		LOG_ERR("MCS server init failed");
 		return ret;
@@ -996,60 +1043,15 @@ int le_audio_volume_mute(void)
 	return 0;
 }
 
-int le_audio_play(void)
+int le_audio_play_pause(void)
 {
 	int ret;
 
-	playing_state = true;
-
-	if (audio_streams[AUDIO_CH_L].ep->status.state == BT_AUDIO_EP_STATE_QOS_CONFIGURED) {
-		ret = bt_audio_stream_enable(&audio_streams[AUDIO_CH_L],
-					     lc3_preset_nrf5340.codec.meta,
-					     lc3_preset_nrf5340.codec.meta_count);
-
-		if (ret) {
-			LOG_WRN("Failed to enable left stream");
-		}
+	ret = ble_mcs_server_play_pause();
+	if (ret) {
+		LOG_WRN("Failed to change streaming state");
+		return ret;
 	}
-
-#if !CONFIG_STREAM_BIDIRECTIONAL
-	if (audio_streams[AUDIO_CH_R].ep->status.state == BT_AUDIO_EP_STATE_QOS_CONFIGURED) {
-		ret = bt_audio_stream_enable(&audio_streams[AUDIO_CH_R],
-					     lc3_preset_nrf5340.codec.meta,
-					     lc3_preset_nrf5340.codec.meta_count);
-
-		if (ret) {
-			LOG_WRN("Failed to enable right stream");
-		}
-	}
-#endif /* !CONFIG_STREAM_BIDIRECTIONAL */
-
-	return 0;
-}
-
-int le_audio_pause(void)
-{
-	int ret;
-
-	playing_state = false;
-
-	if (audio_streams[AUDIO_CH_L].ep->status.state == BT_AUDIO_EP_STATE_STREAMING) {
-		ret = bt_audio_stream_disable(&audio_streams[AUDIO_CH_L]);
-
-		if (ret) {
-			LOG_WRN("Failed to disable left stream");
-		}
-	}
-
-#if !CONFIG_STREAM_BIDIRECTIONAL
-	if (audio_streams[AUDIO_CH_R].ep->status.state == BT_AUDIO_EP_STATE_STREAMING) {
-		ret = bt_audio_stream_disable(&audio_streams[AUDIO_CH_R]);
-
-		if (ret) {
-			LOG_WRN("Failed to disable right stream");
-		}
-	}
-#endif /* !CONFIG_STREAM_BIDIRECTIONAL */
 
 	return 0;
 }

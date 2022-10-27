@@ -171,14 +171,7 @@ int le_audio_volume_mute(void);
  *
  * @return	0 for success, error otherwise
  */
-int le_audio_play(void);
-
-/**
- * @brief	Pause Bluetooth LE Audio stream
- *
- * @return	0 for success, error otherwise
- */
-int le_audio_pause(void);
+int le_audio_play_pause(void);
 
 /**
  * @brief Send Bluetooth LE Audio data
