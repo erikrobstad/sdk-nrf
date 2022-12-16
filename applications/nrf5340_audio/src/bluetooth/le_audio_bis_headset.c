@@ -334,6 +334,11 @@ static void syncable_cb(struct bt_audio_broadcast_sink *sink, bool encrypted)
 
 	LOG_INF("Syncing to broadcast stream index %d", active_stream_index);
 
+	// if (active_audio_stream.stream->ep == NULL) {
+	//	LOG_WRN("1 - Stream endpoint is NULL");
+	//	return;
+	// }
+
 	ret = bt_audio_broadcast_sink_sync(broadcast_sink, bis_index_bitfields[active_stream_index],
 					   audio_streams_p, NULL);
 	if (ret) {
@@ -402,6 +407,7 @@ static int bis_headset_cleanup(bool from_sync_lost_cb)
 
 	ret = bt_audio_broadcast_sink_scan_stop();
 	if (ret && ret != -EALREADY) {
+		LOG_ERR("1");
 		return ret;
 	}
 
@@ -409,12 +415,14 @@ static int bis_headset_cleanup(bool from_sync_lost_cb)
 		if (!from_sync_lost_cb) {
 			ret = bt_audio_broadcast_sink_stop(broadcast_sink);
 			if (ret && ret != -EALREADY) {
+				LOG_ERR("2");
 				return ret;
 			}
 		}
 
 		ret = bt_audio_broadcast_sink_delete(broadcast_sink);
 		if (ret && ret != -EALREADY) {
+			LOG_ERR("3");
 			return ret;
 		}
 
@@ -428,17 +436,18 @@ static int bis_headset_cleanup(bool from_sync_lost_cb)
 
 static int change_active_audio_stream(void)
 {
-	int ret = 0;
+	int ret;
+
+	ret = bt_audio_broadcast_sink_stop(broadcast_sink);
+	if (ret) {
+		LOG_ERR("Failed to stop broadcast sink: %d", ret);
+		return ret;
+	}
 
 	playing_state = false;
 
 	ret = ctrl_events_le_audio_event_send(LE_AUDIO_EVT_NOT_STREAMING);
 	ERR_CHK(ret);
-
-	ret = bt_audio_broadcast_sink_stop(broadcast_sink);
-	if (ret) {
-		LOG_WRN("Failed to pause playing");
-	}
 
 	/* Wrap streams */
 	if (++active_stream_index >= sync_stream_cnt) {
@@ -478,7 +487,7 @@ static int change_active_brdcast_src(void)
 	LOG_DBG("Switching to %s", brdcast_src_names[active_stream.brdcast_src_name_idx]);
 
 	ret = bt_audio_broadcast_sink_scan_start(BT_LE_SCAN_PASSIVE);
-	if (ret) {
+	if (ret && ret != -EALREADY) {
 		return ret;
 	}
 
@@ -547,13 +556,23 @@ int le_audio_play_pause(void)
 	int ret;
 
 	if (playing_state) {
-		playing_state = false;
+		if (active_stream.stream->ep == NULL) {
+			LOG_WRN("Stream endpoint is NULL");
+			return -ECANCELED;
+		}
+
+		if (active_stream.stream->ep->status.state != BT_AUDIO_EP_STATE_STREAMING) {
+			LOG_WRN("Stream not in streaming state");
+			return -ECANCELED;
+		}
 
 		ret = bt_audio_broadcast_sink_stop(broadcast_sink);
 		if (ret) {
 			LOG_ERR("Failed to stop broadcast sink: %d", ret);
 			return ret;
 		}
+
+		playing_state = false;
 	} else {
 		playing_state = true;
 	}
