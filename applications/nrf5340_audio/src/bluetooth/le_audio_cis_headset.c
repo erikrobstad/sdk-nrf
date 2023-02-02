@@ -569,7 +569,7 @@ static int initialize(le_audio_receive_cb recv_cb)
 				return ret;
 			}
 
-		} else {
+		} else if (channel == AUDIO_CH_R) {
 			csip_param.rank = CSIP_HR_RANK;
 			ret = bt_pacs_set_location(BT_AUDIO_DIR_SINK,
 						   BT_AUDIO_LOCATION_FRONT_RIGHT);
@@ -577,6 +577,9 @@ static int initialize(le_audio_receive_cb recv_cb)
 				LOG_ERR("Location set failed");
 				return ret;
 			}
+		} else {
+			LOG_ERR("Channel not supported");
+			return -ECANCELED;
 		}
 #if CONFIG_STREAM_BIDIRECTIONAL
 		ret = bt_pacs_set_available_contexts(BT_AUDIO_DIR_SINK,
@@ -597,10 +600,23 @@ static int initialize(le_audio_receive_cb recv_cb)
 			return ret;
 		}
 
-		ret = bt_pacs_set_location(BT_AUDIO_DIR_SOURCE, BT_AUDIO_LOCATION_FRONT_LEFT);
-		if (ret) {
-			LOG_ERR("Location set failed");
-			return ret;
+		if (channel == AUDIO_CH_L) {
+			ret = bt_pacs_set_location(BT_AUDIO_DIR_SOURCE,
+						   BT_AUDIO_LOCATION_FRONT_LEFT);
+			if (ret) {
+				LOG_ERR("Location set failed");
+				return ret;
+			}
+		} else if (channel == AUDIO_CH_R) {
+			ret = bt_pacs_set_location(BT_AUDIO_DIR_SOURCE,
+						   BT_AUDIO_LOCATION_FRONT_RIGHT);
+			if (ret) {
+				LOG_ERR("Location set failed");
+				return ret;
+			}
+		} else {
+			LOG_ERR("Channel not supported");
+			return -ECANCELED;
 		}
 #else
 		ret = bt_pacs_set_available_contexts(BT_AUDIO_DIR_SINK,

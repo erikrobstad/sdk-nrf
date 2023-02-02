@@ -84,7 +84,7 @@ static void audio_headset_configure(void)
 	sw_codec_cfg.encoder.num_ch = SW_CODEC_MONO;
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_cfg.encoder.bitrate = CONFIG_LC3_BITRATE;
+		sw_codec_cfg.encoder.bitrate = CONFIG_LC3_BITRATE_RETURN;
 	} else {
 		ERR_CHK_MSG(-EINVAL, "No codec selected");
 	}
