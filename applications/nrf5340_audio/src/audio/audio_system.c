@@ -84,7 +84,7 @@ static void audio_headset_configure(void)
 	sw_codec_cfg.encoder.num_ch = SW_CODEC_MONO;
 
 	if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
-		sw_codec_cfg.encoder.bitrate = CONFIG_LC3_BITRATE_RETURN;
+		sw_codec_cfg.encoder.bitrate = CONFIG_LC3_BITRATE;
 	} else {
 		ERR_CHK_MSG(-EINVAL, "No codec selected");
 	}
@@ -163,7 +163,7 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 
 		if (sw_codec_cfg.encoder.enabled) {
 			streamctrl_encoded_data_send(encoded_data, encoded_data_size,
-				sw_codec_cfg.encoder.num_ch);
+						     sw_codec_cfg.encoder.num_ch);
 		}
 		STACK_USAGE_PRINT("encoder_thread", &encoder_thread_data);
 	}

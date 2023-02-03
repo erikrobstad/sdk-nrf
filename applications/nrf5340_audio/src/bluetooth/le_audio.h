@@ -28,32 +28,34 @@
 
 #define BT_AUDIO_LC3_PRESET_CONFIGURABLE(_loc, _stream_context)                                    \
 	BT_AUDIO_LC3_PRESET(                                                                       \
-		BT_CODEC_LC3_CONFIG(BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10,   \
-				    _loc, LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SINK),  \
-				    1, _stream_context),                                           \
+		BT_CODEC_LC3_CONFIG(                                                               \
+			BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10, _loc,         \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SINK), 1,         \
+			_stream_context),                                                          \
 		BT_CODEC_LC3_QOS_10_UNFRAMED(                                                      \
-			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SINK),                    \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SINK),            \
 			CONFIG_BT_AUDIO_RETRANSMITS, CONFIG_BT_AUDIO_MAX_TRANSPORT_LATENCY_MS,     \
 			CONFIG_BT_AUDIO_PRESENTATION_DELAY_US))
 
 #if CONFIG_TRANSPORT_CIS
 #define BT_AUDIO_LC3_UNICAST_PRESET_SINK_RECOMMENDED(_loc, _stream_context)                        \
 	BT_AUDIO_LC3_PRESET(                                                                       \
-		BT_CODEC_LC3_CONFIG(BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10,   \
-				    _loc, LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SINK),  \
-				    1, _stream_context),                                           \
+		BT_CODEC_LC3_CONFIG(                                                               \
+			BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10, _loc,         \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SINK), 1,         \
+			_stream_context),                                                          \
 		BT_CODEC_LC3_QOS_10_UNFRAMED(                                                      \
-			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SINK), 2u, 20u,           \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SINK), 2u, 20u,   \
 			CONFIG_BT_AUDIO_PRESENTATION_DELAY_US))
 
 #define BT_AUDIO_LC3_UNICAST_PRESET_SOURCE_RECOMMENDED(_loc, _stream_context)                      \
 	BT_AUDIO_LC3_PRESET(                                                                       \
 		BT_CODEC_LC3_CONFIG(BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10,   \
 				    _loc,                                                          \
-				    LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SOURCE), 1,   \
-				    _stream_context),                                              \
+				    LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SRC), \
+				    1, _stream_context),                                           \
 		BT_CODEC_LC3_QOS_10_UNFRAMED(                                                      \
-			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SOURCE), 2u, 20u,         \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SRC), 2u, 20u,    \
 			CONFIG_BT_AUDIO_PRESENTATION_DELAY_US))
 
 #define BT_AUDIO_LC3_UNICAST_PRESET_NRF5340_AUDIO_SOURCE                                           \
@@ -87,11 +89,12 @@
 #if CONFIG_TRANSPORT_BIS
 #define BT_AUDIO_LC3_BROADCAST_PRESET_RECOMMENDED(_loc, _stream_context)                           \
 	BT_AUDIO_LC3_PRESET(                                                                       \
-		BT_CODEC_LC3_CONFIG(BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10,   \
-				    _loc, LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SINK),  \
-				    1, _stream_context),                                           \
+		BT_CODEC_LC3_CONFIG(                                                               \
+			BT_AUDIO_CODEC_CONFIG_FREQ, BT_CODEC_CONFIG_LC3_DURATION_10, _loc,         \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SINK), 1,         \
+			_stream_context),                                                          \
 		BT_CODEC_LC3_QOS_10_UNFRAMED(                                                      \
-			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_SINK), 4u, 20u,           \
+			LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_BT_AUDIO_BITRATE_UNICAST_SINK), 4u, 20u,   \
 			CONFIG_BT_AUDIO_PRESENTATION_DELAY_US))
 
 #if CONFIG_BT_AUDIO_BROADCAST_RECOMMENDED
