@@ -151,6 +151,7 @@ struct encoded_audio {
 	uint8_t const *const data;
 	size_t size;
 	uint8_t num_ch;
+	bool testing;
 };
 
 /**

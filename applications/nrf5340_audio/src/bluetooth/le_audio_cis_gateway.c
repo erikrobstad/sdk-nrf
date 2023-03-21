@@ -1519,6 +1519,10 @@ int le_audio_send(struct encoded_audio enc_audio)
 		LOG_DBG("Failed to send data to left channel");
 	}
 
+	if (enc_audio.testing) {
+		return 0;
+	}
+	
 	if (enc_audio.num_ch == 1) {
 		ret = iso_stream_send(enc_audio.data, data_size_pr_stream, headsets[AUDIO_CH_R]);
 	} else {

@@ -50,7 +50,7 @@ const uint32_t GPIO_configuration[][2] = {
 	{ CS47L63_GPIO8_CTRL1, 0x61000001 },
 
 	/* Enable CODEC LED */
-	{ CS47L63_GPIO10_CTRL1, 0x41008001 },
+	{ CS47L63_GPIO10_CTRL1, 0x00000000 },
 };
 
 const uint32_t pdm_mic_enable_configure[][2] = {

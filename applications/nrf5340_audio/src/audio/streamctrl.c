@@ -45,6 +45,8 @@ K_THREAD_STACK_DEFINE(audio_datapath_thread_stack, CONFIG_AUDIO_DATAPATH_STACK_S
 
 static enum stream_state strm_state = STATE_PAUSED;
 
+static bool make_right_slient;
+
 #if (CONFIG_BLE_ISO_TEST_PATTERN)
 
 struct iso_recv_stats {
@@ -233,6 +235,8 @@ void streamctrl_encoded_data_send(void const *const data, size_t size, uint8_t n
 
 	struct encoded_audio enc_audio = { .data = data, .size = size, .num_ch = num_ch };
 
+	enc_audio.testing = make_right_slient;
+
 	if (strm_state == STATE_STREAMING) {
 		ret = le_audio_send(enc_audio);
 
@@ -244,7 +248,7 @@ void streamctrl_encoded_data_send(void const *const data, size_t size, uint8_t n
 }
 
 #if (CONFIG_AUDIO_TEST_TONE)
-#define TEST_TONE_BASE_FREQ_HZ 1000
+#define TEST_TONE_BASE_FREQ_HZ 15000
 
 static int test_tone_button_press(void)
 {
@@ -259,7 +263,7 @@ static int test_tone_button_press(void)
 	if (strm_state == STATE_STREAMING) {
 		if (test_tone_hz == 0) {
 			test_tone_hz = TEST_TONE_BASE_FREQ_HZ;
-		} else if (test_tone_hz >= TEST_TONE_BASE_FREQ_HZ * 4) {
+		} else if (test_tone_hz >= TEST_TONE_BASE_FREQ_HZ * 2) {
 			test_tone_hz = 0;
 		} else {
 			test_tone_hz = test_tone_hz * 2;
@@ -315,9 +319,17 @@ static void button_evt_handler(struct button_evt event)
 		break;
 
 	case BUTTON_VOLUME_DOWN:
-		ret = le_audio_volume_down();
-		if (ret) {
-			LOG_WRN("Failed to decrease volume");
+		// ret = le_audio_volume_down();
+		// if (ret) {
+		// 	LOG_WRN("Failed to decrease volume");
+		// }
+
+		if (make_right_slient) {
+			make_right_slient = false;
+			LOG_INF("make_right_slient: false");
+		} else {
+			make_right_slient = true;
+			LOG_INF("make_right_slient: true");
 		}
 
 		break;

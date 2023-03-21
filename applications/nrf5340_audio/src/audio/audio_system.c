@@ -42,6 +42,7 @@ static struct sw_codec_config sw_codec_cfg;
 /* Buffer which can hold max 1 period test tone at 1000 Hz */
 static int16_t test_tone_buf[CONFIG_AUDIO_SAMPLE_RATE_HZ / 1000];
 static size_t test_tone_size;
+static uint32_t test_tone_freq;
 
 static void audio_gateway_configure(void)
 {
@@ -105,6 +106,7 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 
 	void *tmp_pcm_raw_data[CONFIG_FIFO_FRAME_SPLIT_NUM];
 	char pcm_raw_data[FRAME_SIZE_BYTES];
+	char pcm_raw_data_null[FRAME_SIZE_BYTES] = { 0 };
 
 	static uint8_t *encoded_data;
 	static size_t pcm_block_size;
@@ -128,7 +130,7 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 		}
 
 		if (sw_codec_cfg.encoder.enabled) {
-			if (test_tone_size) {
+			if (test_tone_freq == 15000) {
 				/* Test tone takes over audio stream */
 				uint32_t num_bytes;
 				char tmp[FRAME_SIZE_BYTES / 2];
@@ -141,10 +143,16 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 						    CONFIG_AUDIO_BIT_DEPTH_BITS, pcm_raw_data,
 						    &num_bytes);
 				ERR_CHK(ret);
-			}
 
-			ret = sw_codec_encode(pcm_raw_data, FRAME_SIZE_BYTES, &encoded_data,
-					      &encoded_data_size);
+				ret = sw_codec_encode(pcm_raw_data, FRAME_SIZE_BYTES, &encoded_data,
+						      &encoded_data_size);
+			} else if (test_tone_freq == 30000) {
+				ret = sw_codec_encode(pcm_raw_data_null, FRAME_SIZE_BYTES,
+						      &encoded_data, &encoded_data_size);
+			} else {
+				ret = sw_codec_encode(pcm_raw_data, FRAME_SIZE_BYTES, &encoded_data,
+						      &encoded_data_size);
+			}
 
 			ERR_CHK_MSG(ret, "Encode failed");
 		}
@@ -173,7 +181,9 @@ int audio_encode_test_tone_set(uint32_t freq)
 {
 	int ret;
 
-	if (freq == 0) {
+	test_tone_freq = freq;
+
+	if ((freq == 0) || (freq > 15000)) {
 		test_tone_size = 0;
 		return 0;
 	}
