@@ -243,6 +243,67 @@ config BT_DEVICE_APPEARANCE
 	# Broadcasting Device - 0x0885
 	default 2181
 
+config BT_MAX_CONN
+	default 3
+
+config BT_CENTRAL
+	default y
+
+config BT_MAX_PAIRED
+	default 2
+
+config BT_GATT_DYNAMIC_DB
+	default y
+
+config BT_GATT_CLIENT
+	default y
+
+config BT_BONDABLE
+	default y
+
+config BT_PRIVACY
+	default y
+
+config BT_SCAN_WITH_IDENTITY
+	default y
+
+config BT_SMP
+	default y
+
+config BT_GAP_AUTO_UPDATE_CONN_PARAMS
+	default n
+
+config BT_AUTO_PHY_UPDATE
+	default n
+
+config BT_AUTO_DATA_LEN_UPDATE
+	default n
+
+config BT_L2CAP_TX_BUF_COUNT
+	default 12
+
+config BT_BUF_ACL_RX_SIZE
+	default 502 if (AUDIO_DFU > 0)
+	default 259
+
+config SETTINGS
+	default y
+
+config BT_SETTINGS
+	default y
+
+config FLASH
+	default y
+
+config FLASH_MAP
+	default y
+
+config NVS
+	default y
+
+config NVS_LOG_LEVEL
+	default 2
+
 config BT_ISO_BROADCASTER
 	default y
 
@@ -257,6 +318,9 @@ config BT_AUDIO_BROADCAST_SRC_STREAM_COUNT
 
 config BT_ISO_MAX_CHAN
 	default 2
+
+config BT_L2CAP_TX_MTU
+	default 80
 
 endif # AUDIO_DEV = 2 (GATEWAY)
 

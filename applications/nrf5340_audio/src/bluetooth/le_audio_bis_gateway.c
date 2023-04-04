@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+#define START_BIS_RIGHT_AWAY false
+
 #include "le_audio.h"
 
 #include <zephyr/bluetooth/bluetooth.h>
@@ -26,6 +28,11 @@ BUILD_ASSERT(CONFIG_BT_AUDIO_BROADCAST_SRC_STREAM_COUNT <= 2,
 #define STANDARD_QUALITY_16KHZ 16000
 #define STANDARD_QUALITY_24KHZ 24000
 #define HIGH_QUALITY_48KHZ 48000
+
+#define CIS_CONN_RETRY_TIMES 5
+#define CONNECTION_PARAMETERS                                                                      \
+	BT_LE_CONN_PARAM(CONFIG_BLE_ACL_CONN_INTERVAL, CONFIG_BLE_ACL_CONN_INTERVAL,               \
+			 CONFIG_BLE_ACL_SLAVE_LATENCY, CONFIG_BLE_ACL_SUP_TIMEOUT)
 
 /* For being able to dynamically define iso_tx_pools */
 #define NET_BUF_POOL_ITERATE(i, _)                                                                 \
@@ -50,6 +57,17 @@ static bool delete_broadcast_src;
 static uint32_t seq_num[CONFIG_BT_AUDIO_BROADCAST_SRC_STREAM_COUNT];
 
 static struct bt_le_ext_adv *adv;
+
+static struct k_work bis_start;
+
+static uint8_t bonded_num;
+
+struct bt_conn *headset_conn1;
+struct bt_conn *headset_conn2;
+
+static void ble_acl_start_scan(void);
+static int initialize(void);
+static void bis_delayed_start_process(struct k_work *work);
 
 static bool is_iso_buffer_full(uint8_t idx)
 {
@@ -175,6 +193,8 @@ static int adv_create(void)
 {
 	int ret;
 
+#define BT_LE_PER_ADV_AURACAST BT_LE_PER_ADV_PARAM(0x20, 0x20, BT_LE_PER_ADV_OPT_NONE)
+
 	/* Broadcast Audio Streaming Endpoint advertising data */
 	NET_BUF_SIMPLE_DEFINE(ad_buf, BT_UUID_SIZE_16 + BT_AUDIO_BROADCAST_ID_SIZE);
 	/* Buffer for Public Broadcast Announcement */
@@ -199,7 +219,7 @@ static int adv_create(void)
 	}
 
 	/* Set periodic advertising parameters */
-	ret = bt_le_per_adv_set_param(adv, BT_LE_PER_ADV_DEFAULT);
+	ret = bt_le_per_adv_set_param(adv, BT_LE_PER_ADV_AURACAST);
 	if (ret) {
 		LOG_ERR("Failed to set periodic advertising parameters (ret %d)", ret);
 		return ret;
@@ -264,6 +284,271 @@ static int adv_create(void)
 
 	return 0;
 }
+
+static void bis_delayed_start_process(struct k_work *work)
+{
+	int ret;
+
+	ret = initialize();
+	if (ret) {
+		return;
+	}
+
+	/* Start extended advertising */
+	ret = bt_le_ext_adv_start(adv, BT_LE_EXT_ADV_START_DEFAULT);
+	if (ret) {
+		LOG_ERR("Failed to start extended advertising: %d", ret);
+	}
+
+	/* Enable Periodic Advertising */
+	ret = bt_le_per_adv_start(adv);
+	if (ret) {
+		LOG_ERR("Failed to enable periodic advertising: %d", ret);
+	}
+
+	LOG_DBG("Starting broadcast source");
+
+	ret = bt_audio_broadcast_source_start(broadcast_source, adv);
+
+	LOG_DBG("LE Audio enabled");
+}
+
+static bool ble_acl_gateway_all_links_connected(void)
+{
+	if (headset_conn1 != NULL && headset_conn2 != NULL) {
+		return true;
+	}
+	return false;
+}
+
+static void bond_check(const struct bt_bond_info *info, void *user_data)
+{
+	char addr_buf[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(&info->addr, addr_buf, BT_ADDR_LE_STR_LEN);
+
+	LOG_DBG("Stored bonding found: %s", addr_buf);
+	bonded_num++;
+}
+
+static void bond_connect(const struct bt_bond_info *info, void *user_data)
+{
+	int ret;
+	const bt_addr_le_t *adv_addr = user_data;
+	struct bt_conn *conn;
+
+	if (!bt_addr_le_cmp(&info->addr, adv_addr)) {
+		LOG_DBG("Found bonded device");
+
+		ret = bt_le_scan_stop();
+		if (ret) {
+			LOG_WRN("Stop scan failed: %d", ret);
+		}
+
+		ret = bt_conn_le_create(adv_addr, BT_CONN_LE_CREATE_CONN, CONNECTION_PARAMETERS,
+					&conn);
+		if (ret) {
+			LOG_WRN("Create ACL connection failed: %d", ret);
+			ble_acl_start_scan();
+		}
+	}
+}
+
+static int device_found(uint8_t type, const uint8_t *data, uint8_t data_len,
+			const bt_addr_le_t *addr)
+{
+	int ret;
+	struct bt_conn *conn;
+
+	if ((data_len == DEVICE_NAME_PEER_LEN) &&
+	    (strncmp(DEVICE_NAME_PEER, data, DEVICE_NAME_PEER_LEN) == 0)) {
+		LOG_DBG("Device found");
+
+		ret = bt_le_scan_stop();
+		if (ret) {
+			LOG_WRN("Stop scan failed: %d", ret);
+		}
+
+		ret = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN, CONNECTION_PARAMETERS, &conn);
+		if (ret) {
+			LOG_ERR("Could not init connection");
+			ble_acl_start_scan();
+			return ret;
+		}
+
+		return 0;
+	}
+
+	return -ENOENT;
+}
+
+/** @brief  Parse BLE advertisement package.
+ */
+static void ad_parse(struct net_buf_simple *p_ad, const bt_addr_le_t *addr)
+{
+	while (p_ad->len > 1) {
+		uint8_t len = net_buf_simple_pull_u8(p_ad);
+		uint8_t type;
+
+		/* Check for early termination */
+		if (len == 0) {
+			return;
+		}
+
+		if (len > p_ad->len) {
+			LOG_WRN("AD malformed");
+			return;
+		}
+
+		type = net_buf_simple_pull_u8(p_ad);
+
+		if (device_found(type, p_ad->data, len - 1, addr) == 0) {
+			return;
+		}
+
+		(void)net_buf_simple_pull(p_ad, len - 1);
+	}
+}
+
+static void on_device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
+			    struct net_buf_simple *p_ad)
+{
+	/* Direct advertising has no payload, so no need to parse */
+	if (type == BT_GAP_ADV_TYPE_ADV_DIRECT_IND) {
+		if (bonded_num) {
+			bt_foreach_bond(BT_ID_DEFAULT, bond_connect, (void *)addr);
+		}
+		return;
+	} else if ((type == BT_GAP_ADV_TYPE_ADV_IND || type == BT_GAP_ADV_TYPE_EXT_ADV) &&
+		   (bonded_num < CONFIG_BT_MAX_PAIRED)) {
+		/* Note: May lead to connection creation */
+		ad_parse(p_ad, addr);
+	}
+}
+
+static void ble_acl_start_scan(void)
+{
+	int ret;
+
+	/* Reset number of bonds found */
+	bonded_num = 0;
+
+	bt_foreach_bond(BT_ID_DEFAULT, bond_check, NULL);
+
+	if (bonded_num >= CONFIG_BT_MAX_PAIRED) {
+		LOG_INF("All bonded slots filled, will not accept new devices");
+	}
+
+	ret = bt_le_scan_start(BT_LE_SCAN_PASSIVE, on_device_found);
+	if (ret && ret != -EALREADY) {
+		LOG_WRN("Scanning failed to start: %d", ret);
+		return;
+	}
+
+	LOG_INF("Scanning successfully started");
+}
+
+static void connected_cb(struct bt_conn *conn, uint8_t err)
+{
+	int ret;
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	if (err) {
+		LOG_ERR("ACL connection to %s failed, error %d", addr, err);
+
+		bt_conn_unref(conn);
+		ble_acl_start_scan();
+
+		return;
+	}
+
+	if (headset_conn1 == NULL) {
+		headset_conn1 = conn;
+	} else if (headset_conn2 == NULL) {
+		headset_conn2 = conn;
+	} else {
+		LOG_WRN("Something is wrong");
+	}
+
+	if (!ble_acl_gateway_all_links_connected()) {
+		ble_acl_start_scan();
+	}
+
+	if (!START_BIS_RIGHT_AWAY) {
+		if (ble_acl_gateway_all_links_connected()) {
+			k_work_submit(&bis_start);
+		}
+	}
+
+	/* ACL connection established */
+	LOG_INF("Connected: %s", addr);
+
+#if (CONFIG_NRF_21540_ACTIVE)
+	uint16_t conn_handle;
+
+	ret = bt_hci_get_conn_handle(conn, &conn_handle);
+	if (ret) {
+		LOG_ERR("Unable to get conn handle");
+	} else {
+		ret = ble_hci_vsc_conn_tx_pwr_set(conn_handle, CONFIG_NRF_21540_MAIN_DBM);
+		if (ret) {
+			LOG_ERR("Failed to set TX power for conn");
+		} else {
+			LOG_INF("\tTX power set to %d dBm", CONFIG_NRF_21540_MAIN_DBM);
+		}
+	}
+#endif /* (CONFIG_NRF_21540_ACTIVE) */
+
+	ret = bt_conn_set_security(conn, BT_SECURITY_L2);
+	if (ret) {
+		LOG_ERR("Failed to set security to L0: %d", ret);
+	}
+}
+
+static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	LOG_INF("Disconnected: %s (reason 0x%02x)", addr, reason);
+
+	if (headset_conn1 == conn) {
+		headset_conn1 = NULL;
+	} else if (headset_conn2 == conn) {
+		headset_conn2 = NULL;
+	} else {
+		LOG_WRN("Unknown conn");
+	}
+
+	bt_conn_unref(conn);
+
+	ble_acl_start_scan();
+}
+
+static void security_changed_cb(struct bt_conn *conn, bt_security_t level, enum bt_security_err err)
+{
+	int ret;
+
+	if (err) {
+		LOG_ERR("Security failed: level %d err %d", level, err);
+		ret = bt_conn_disconnect(conn, err);
+		if (ret) {
+			LOG_ERR("Failed to disconnect %d", ret);
+		}
+	} else {
+		LOG_DBG("Security changed: level %d", level);
+	}
+}
+
+static struct bt_conn_cb conn_callbacks = {
+	.connected = connected_cb,
+	.disconnected = disconnected_cb,
+	.security_changed = security_changed_cb,
+
+};
 
 static int initialize(void)
 {
@@ -472,38 +757,15 @@ int le_audio_send(struct encoded_audio enc_audio)
 
 int le_audio_enable(le_audio_receive_cb recv_cb)
 {
-	int ret;
+	bt_conn_cb_register(&conn_callbacks);
 
-	ARG_UNUSED(recv_cb);
+	k_work_init(&bis_start, bis_delayed_start_process);
 
-	ret = initialize();
-	if (ret) {
-		LOG_ERR("Failed to initialize");
-		return ret;
+	if (START_BIS_RIGHT_AWAY) {
+		bis_delayed_start_process(NULL);
 	}
 
-	/* Start extended advertising */
-	ret = bt_le_ext_adv_start(adv, BT_LE_EXT_ADV_START_DEFAULT);
-	if (ret) {
-		LOG_ERR("Failed to start extended advertising: %d", ret);
-		return ret;
-	}
-
-	/* Enable Periodic Advertising */
-	ret = bt_le_per_adv_start(adv);
-	if (ret) {
-		LOG_ERR("Failed to enable periodic advertising: %d", ret);
-		return ret;
-	}
-
-	LOG_DBG("Starting broadcast source");
-
-	ret = bt_audio_broadcast_source_start(broadcast_source, adv);
-	if (ret) {
-		return ret;
-	}
-
-	LOG_DBG("LE Audio enabled");
+	ble_acl_start_scan();
 
 	return 0;
 }
