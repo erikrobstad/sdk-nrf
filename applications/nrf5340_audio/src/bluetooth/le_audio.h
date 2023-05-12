@@ -26,19 +26,6 @@
 #error "Please select either CONFIG_SCAN_MODE_ACTIVE or CONFIG_SCAN_MODE_PASSIVE"
 #endif
 
-#define LE_AUDIO_EXTENDED_ADV_NAME                                                                 \
-	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_EXT_ADV | BT_LE_ADV_OPT_USE_NAME,                            \
-			CONFIG_BLE_ACL_EXT_ADV_INT_MIN, CONFIG_BLE_ACL_EXT_ADV_INT_MAX, NULL)
-
-#define LE_AUDIO_EXTENDED_ADV_CONN_NAME                                                            \
-	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_EXT_ADV | BT_LE_ADV_OPT_CONNECTABLE |                        \
-				BT_LE_ADV_OPT_USE_NAME,                                            \
-			CONFIG_BLE_ACL_EXT_ADV_INT_MIN, CONFIG_BLE_ACL_EXT_ADV_INT_MAX, NULL)
-
-#define LE_AUDIO_PERIODIC_ADV                                                                      \
-	BT_LE_PER_ADV_PARAM(CONFIG_BLE_ACL_PER_ADV_INT_MIN, CONFIG_BLE_ACL_PER_ADV_INT_MAX,        \
-			    BT_LE_PER_ADV_OPT_NONE)
-
 #if (CONFIG_AUDIO_SAMPLE_RATE_48000_HZ)
 #define BT_AUDIO_CODEC_CONFIG_FREQ BT_CODEC_CONFIG_LC3_FREQ_48KHZ
 #define BT_AUDIO_CODEC_CAPABILIY_FREQ BT_CODEC_LC3_FREQ_48KHZ
@@ -181,6 +168,32 @@ int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
  *		error otherwise
  */
 int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay);
+
+/**
+ * @brief	Set pointer to connection, used by CIS
+ *
+ * @param[in]	conn	The connection pointer
+ */
+void le_audio_conn_set(struct bt_conn *conn);
+
+/**
+ * @brief	Set pointer to extended advertisement, used by BIS
+ * @note	Will also start the broadcast_source when used with BIS
+ * @param[in]	conn	The connection pointer
+ *
+ * @return      0 for success,
+ *              (negative) error code otherwise
+ */
+int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv);
+
+/**
+ * @brief	Get bt_data containing the data to advertise
+ *
+ * @param[in/out]	adv		Pointer to the pointer of bt_data to advertise
+ * @param[in/out]	adv_size	Pointer to size of adv
+ * @param[in]		periodic	Specify if the data is for periodic advertisement
+ */
+void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodic);
 
 /**
  * @brief	Increase volume by one step

@@ -25,6 +25,7 @@
 #include "data_fifo.h"
 #include "board.h"
 #include "le_audio.h"
+#include "bt_mgmt_adv.h"
 #include "audio_datapath.h"
 
 #include <zephyr/logging/log.h>
@@ -465,6 +466,33 @@ int streamctrl_start(void)
 
 	ret = le_audio_enable(le_audio_rx_data_handler, audio_datapath_sdu_ref_update);
 	ERR_CHK_MSG(ret, "Failed to enable LE Audio");
+
+	if ((CONFIG_AUDIO_DEV == HEADSET) && IS_ENABLED(CONFIG_TRANSPORT_CIS)) {
+		size_t ext_adv_size = 0;
+		const struct bt_data *ext_adv = NULL;
+
+		ret = bt_mgmt_adv_init(le_audio_conn_set, NULL);
+		ERR_CHK(ret);
+
+		le_audio_adv_get(&ext_adv, &ext_adv_size, false);
+
+		ret = bt_mgmt_adv_start(ext_adv, ext_adv_size, NULL, 0, true);
+		ERR_CHK(ret);
+	} else if ((CONFIG_AUDIO_DEV == GATEWAY) && IS_ENABLED(CONFIG_TRANSPORT_BIS)) {
+		size_t ext_adv_size = 0;
+		size_t per_adv_size = 0;
+		const struct bt_data *ext_adv = NULL;
+		const struct bt_data *per_adv = NULL;
+
+		ret = bt_mgmt_adv_init(NULL, le_audio_ext_adv_set);
+		ERR_CHK(ret);
+
+		le_audio_adv_get(&ext_adv, &ext_adv_size, false);
+		le_audio_adv_get(&per_adv, &per_adv_size, true);
+
+		ret = bt_mgmt_adv_start(ext_adv, ext_adv_size, per_adv, per_adv_size, false);
+		ERR_CHK(ret);
+	}
 
 	return 0;
 }
