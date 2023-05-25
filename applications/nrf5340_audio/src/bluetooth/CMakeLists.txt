@@ -8,6 +8,11 @@ target_sources(app PRIVATE
 	       ${CMAKE_CURRENT_SOURCE_DIR}/ble_core.c
 )
 
+add_subdirectory(bt_management)
+zephyr_library_include_directories(
+    bt_management
+)
+
 if (CONFIG_TRANSPORT_CIS)
 	target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ble_audio_services.c)
 

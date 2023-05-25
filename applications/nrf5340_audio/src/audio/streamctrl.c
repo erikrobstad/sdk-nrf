@@ -25,6 +25,8 @@
 #include "data_fifo.h"
 #include "board.h"
 #include "le_audio.h"
+#include "bt_mgmt_adv.h"
+#include "bt_mgmt_scan.h"
 #include "audio_datapath.h"
 
 #include <zephyr/logging/log.h>
@@ -465,6 +467,24 @@ int streamctrl_start(void)
 
 	ret = le_audio_enable(le_audio_rx_data_handler, audio_datapath_sdu_ref_update);
 	ERR_CHK_MSG(ret, "Failed to enable LE Audio");
+
+	if ((CONFIG_AUDIO_DEV == 1) && IS_ENABLED(CONFIG_TRANSPORT_CIS)) {
+		const struct bt_data *ad_peer = NULL;
+		size_t adv_size = 0;
+
+		ret = bt_mgmt_init();
+		ERR_CHK(ret);
+		le_audio_adv_get(&ad_peer, &adv_size);
+
+		ret = bt_mgmt_ext_adv_start(ad_peer, adv_size, le_audio_conn_set);
+		ERR_CHK(ret);
+	} else if ((CONFIG_AUDIO_DEV == GATEWAY) && IS_ENABLED(CONFIG_TRANSPORT_CIS)) {
+		ret = bt_mgmt_scan_init(le_audio_conn_set);
+		ERR_CHK(ret);
+
+		ret = bt_mgmt_scan_start();
+		ERR_CHK(ret);
+	}
 
 	return 0;
 }
