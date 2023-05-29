@@ -26,6 +26,7 @@
 #include "board.h"
 #include "le_audio.h"
 #include "bt_mgmt_adv.h"
+#include "bt_mgmt_scan.h"
 #include "audio_datapath.h"
 
 #include <zephyr/logging/log.h>
@@ -177,7 +178,7 @@ static void audio_datapath_thread(void *dummy1, void *dummy2, void *dummy3)
 		audio_datapath_stream_out(iso_received->data, iso_received->data_size,
 					  iso_received->sdu_ref, iso_received->bad_frame,
 					  iso_received->recv_frame_ts);
-#endif
+#endif /* ((CONFIG_AUDIO_DEV == GATEWAY) && (CONFIG_AUDIO_SOURCE_USB)) */
 		data_fifo_block_free(&ble_fifo_rx, (void *)&iso_received);
 
 		STACK_USAGE_PRINT("audio_datapath_thread", &audio_datapath_thread_data);
@@ -247,6 +248,12 @@ static int test_tone_button_press(void)
 	return 0;
 }
 #endif /* (CONFIG_AUDIO_TEST_TONE) */
+
+// TODO: Change to event based approach
+static void nonvalid_iso_cfgs(struct bt_conn *conn)
+{
+	bt_mgmt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+}
 
 /* Handle button activity */
 static void button_msg_sub_thread(void)
@@ -330,7 +337,7 @@ static void button_msg_sub_thread(void)
 			if (ret) {
 				LOG_WRN("User defined button 5 action failed, ret: %d", ret);
 			}
-#endif
+#endif /* (CONFIG_AUDIO_MUTE) */
 			break;
 
 		default:
@@ -464,7 +471,8 @@ int streamctrl_start(void)
 	ret = k_thread_name_set(audio_datapath_thread_id, "AUDIO DATAPATH");
 	ERR_CHK(ret);
 
-	ret = le_audio_enable(le_audio_rx_data_handler, audio_datapath_sdu_ref_update);
+	ret = le_audio_enable(le_audio_rx_data_handler, audio_datapath_sdu_ref_update,
+			      nonvalid_iso_cfgs);
 	ERR_CHK_MSG(ret, "Failed to enable LE Audio");
 
 	if ((CONFIG_AUDIO_DEV == HEADSET) && IS_ENABLED(CONFIG_TRANSPORT_CIS)) {
@@ -492,6 +500,13 @@ int streamctrl_start(void)
 
 		ret = bt_mgmt_adv_start(ext_adv, ext_adv_size, per_adv, per_adv_size, false);
 		ERR_CHK(ret);
+	} else if ((CONFIG_AUDIO_DEV == GATEWAY) && IS_ENABLED(CONFIG_TRANSPORT_CIS)) {
+		/* Scan interval and scan window as two times of ISO interval */
+		// TODO: Make scan interval and scan window dynamic (make a CONFIG for ISO interval?)
+		ret = bt_mgmt_scan_init(le_audio_conn_set, le_audio_conn_disconnected, 20, 20);
+		ERR_CHK(ret);
+
+		bt_mgmt_scan_start();
 	}
 
 	return 0;

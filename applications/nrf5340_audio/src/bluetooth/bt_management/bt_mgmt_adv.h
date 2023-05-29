@@ -24,6 +24,7 @@
 			    BT_LE_PER_ADV_OPT_NONE)
 
 typedef void (*bt_mgmt_conn_set_cb)(struct bt_conn *conn);
+typedef void (*bt_mgmt_conn_disconnected_cb)(struct bt_conn *conn);
 typedef int (*bt_mgmt_ext_adv_set_cb)(struct bt_le_ext_adv *ext_adv);
 
 /**

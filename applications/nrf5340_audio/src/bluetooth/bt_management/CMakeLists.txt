@@ -6,4 +6,5 @@
 
 target_sources(app PRIVATE
 	       ${CMAKE_CURRENT_SOURCE_DIR}/bt_mgmt_adv.c
+	       ${CMAKE_CURRENT_SOURCE_DIR}/bt_mgmt_scan.c
 )
