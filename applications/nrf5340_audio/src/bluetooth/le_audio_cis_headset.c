@@ -67,10 +67,26 @@ static uint8_t csip_rsi[BT_CSIP_RSI_SIZE];
 static le_audio_receive_cb receive_cb;
 static le_audio_timestamp_cb timestamp_cb;
 
+#define AVAILABLE_SINK_CONTEXT                                                                     \
+	(BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED | BT_AUDIO_CONTEXT_TYPE_CONVERSATIONAL)
+#define AVAILABLE_SOURCE_CONTEXT                                                                   \
+	(BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED | BT_AUDIO_CONTEXT_TYPE_CONVERSATIONAL)
+
+static uint8_t unicast_server_addata[] = {
+	BT_UUID_16_ENCODE(BT_UUID_ASCS_VAL),	/* ASCS UUID */
+	BT_AUDIO_UNICAST_ANNOUNCEMENT_TARGETED, /* Target Announcement */
+	(((AVAILABLE_SINK_CONTEXT) >> 0) & 0xFF),
+	(((AVAILABLE_SINK_CONTEXT) >> 8) & 0xFF),
+	(((AVAILABLE_SOURCE_CONTEXT) >> 0) & 0xFF),
+	(((AVAILABLE_SOURCE_CONTEXT) >> 8) & 0xFF),
+	0x00, /* Metadata length */
+};
+
 static const struct bt_data ad_peer[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(BT_UUID_ASCS_VAL)),
-	BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(BT_UUID_PACS_VAL)),
+	BT_DATA_BYTES(BT_DATA_UUID16_SOME, BT_UUID_16_ENCODE(BT_UUID_ASCS_VAL),
+		      BT_UUID_16_ENCODE(BT_UUID_PACS_VAL)),
+	BT_DATA(BT_DATA_SVC_DATA16, unicast_server_addata, ARRAY_SIZE(unicast_server_addata)),
 	BT_CSIP_DATA_RSI(csip_rsi)};
 
 static void le_audio_event_publish(enum le_audio_evt_type event)
@@ -129,7 +145,7 @@ static enum bt_audio_dir caps_dirs[] = {
 
 static const struct bt_codec_qos_pref qos_pref = BT_CODEC_QOS_PREF(
 	true, BT_GAP_LE_PHY_2M, BLE_ISO_RETRANSMITS, BLE_ISO_LATENCY_MS,
-	CONFIG_AUDIO_MIN_PRES_DLY_US, CONFIG_AUDIO_MAX_PRES_DLY_US,
+	CONFIG_AUDIO_MIN_PRES_DLY_US, CONFIG_AUDIO_MAX_PRES_DLY_US, // Here
 	CONFIG_BT_AUDIO_PREFERRED_MIN_PRES_DLY_US, CONFIG_BT_AUDIO_PREFERRED_MAX_PRES_DLY_US);
 
 /* clang-format off */
@@ -277,8 +293,8 @@ static void advertising_start(void)
 {
 #if CONFIG_BT_BONDABLE
 	k_msgq_purge(&bonds_queue);
-	bt_foreach_bond(BT_ID_DEFAULT, bond_find, NULL);
-#endif /* CONFIG_BT_BONDABLE */
+	bt_foreach_bond(BT_ID_DEFAULT, bond_find, NULL); // Here
+#endif							 /* CONFIG_BT_BONDABLE */
 
 	k_work_submit(&adv_work);
 }
@@ -836,7 +852,7 @@ int le_audio_play_pause(void)
 {
 	int ret;
 
-	if (IS_ENABLED(CONFIG_STREAM_BIDIRECTIONAL)) {
+	if (false) {
 		LOG_WRN("Play/pause not supported for bidirectional mode");
 	} else {
 		ret = ble_mcs_play_pause(default_conn);

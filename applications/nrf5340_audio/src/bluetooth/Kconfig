@@ -276,7 +276,7 @@ config NRF_21540_PRI_ADV_DBM
 
 config CODEC_CAP_COUNT_MAX
 	int "Max storage of codec capabilities"
-	default 5
+	default 10
 	help
 	  Max number of codec capabilities to store per stream.
 
@@ -421,7 +421,7 @@ config BT_AUDIO_PACKING_INTERLEAVED
 
 choice	BT_AUDIO_PRES_DLY_SRCH
 	prompt "Default search mode for the presentation delay"
-	default BT_AUDIO_PRES_DELAY_SRCH_PREF_MIN
+	default BT_AUDIO_PRES_DELAY_SRCH_MAX
 	help
 	  Set the default search mode for the presentation delay.
 

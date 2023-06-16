@@ -24,7 +24,8 @@
 #include "channel_assignment.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(cis_gateway, CONFIG_BLE_LOG_LEVEL);
+// LOG_MODULE_REGISTER(cis_gateway, CONFIG_BLE_LOG_LEVEL);
+LOG_MODULE_REGISTER(cis_gateway, 3);
 
 ZBUS_CHAN_DEFINE(le_audio_chan, struct le_audio_msg, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
@@ -88,8 +89,8 @@ K_MSGQ_DEFINE(kwork_msgq, sizeof(struct worker_data),
 static struct temp_cap_storage temp_cap[CONFIG_BT_MAX_CONN];
 
 /* Make sure that we have at least one headset device per CONFIG_BT_BAP_UNICAST_CLIENT_ASE_SNK */
-BUILD_ASSERT(ARRAY_SIZE(headsets) >= CONFIG_BT_BAP_UNICAST_CLIENT_ASE_SNK_COUNT,
-	     "We need to have at least one headset device per ASE SINK");
+// BUILD_ASSERT(ARRAY_SIZE(headsets) >= CONFIG_BT_BAP_UNICAST_CLIENT_ASE_SNK_COUNT,
+// 	     "We need to have at least one headset device per ASE SINK");
 
 /* Make sure that we have at least one headset device per CONFIG_BT_BAP_UNICAST_CLIENT_ASE_SRC */
 BUILD_ASSERT(ARRAY_SIZE(headsets) >= CONFIG_BT_BAP_UNICAST_CLIENT_ASE_SRC_COUNT,
@@ -142,6 +143,8 @@ static int headset_pres_delay_find(uint8_t index, uint32_t *pres_dly_us)
 	uint32_t pres_dly_max = headsets[index].sink_ep->qos_pref.pd_max;
 	uint32_t pref_dly_min = headsets[index].sink_ep->qos_pref.pref_pd_min;
 	uint32_t pref_dly_max = headsets[index].sink_ep->qos_pref.pref_pd_max;
+
+	LOG_INF("min: %d, max: %d, pref min: %d, pref max: %d", pres_dly_min, pres_dly_max, pref_dly_min, pref_dly_max);
 
 	for (int i = 0; i < ARRAY_SIZE(headsets); i++) {
 		if (headsets[i].sink_ep != NULL) {
@@ -214,7 +217,7 @@ static int headset_pres_delay_find(uint8_t index, uint32_t *pres_dly_us)
 static bool ep_state_check(struct bt_bap_ep *ep, enum bt_bap_ep_state state)
 {
 	if (ep == NULL) {
-		LOG_DBG("Endpoint is NULL");
+		// LOG_DBG("Endpoint is NULL");
 		return false;
 	}
 
@@ -313,9 +316,11 @@ static void unicast_client_location_cb(struct bt_conn *conn, enum bt_audio_dir d
 	if (dir == BT_AUDIO_DIR_SINK) {
 		if (loc & BT_AUDIO_LOCATION_FRONT_LEFT || loc & BT_AUDIO_LOCATION_SIDE_LEFT) {
 			headsets[AUDIO_CH_L].headset_conn = conn;
+			LOG_INF("LEFT");
 		} else if (loc & BT_AUDIO_LOCATION_FRONT_RIGHT ||
 			   loc & BT_AUDIO_LOCATION_SIDE_RIGHT) {
 			headsets[AUDIO_CH_R].headset_conn = conn;
+			LOG_INF("RIGHT");
 		} else {
 			LOG_ERR("Channel location not supported");
 			ret = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
@@ -326,6 +331,7 @@ static void unicast_client_location_cb(struct bt_conn *conn, enum bt_audio_dir d
 
 		if (!ble_acl_gateway_all_links_connected()) {
 			ble_acl_start_scan();
+			// LOG_INF("Only connecting to one headset at the moment");
 		} else {
 			LOG_INF("All headsets connected");
 		}
@@ -409,6 +415,8 @@ static void stream_configured_cb(struct bt_bap_stream *stream, const struct bt_c
 			&headsets[channel_index].sink_stream);
 
 		headsets[channel_index].sink_stream.qos->pd = new_pres_dly_us;
+
+		LOG_INF("new_pres_dly_us: %d", new_pres_dly_us);
 
 		ret = bt_bap_stream_qos(headsets[channel_index].headset_conn, unicast_group);
 		if (ret) {
@@ -747,6 +755,8 @@ static bool valid_codec_cap_check(struct bt_codec cap_array[], size_t size)
 	/* Only the sampling frequency is checked */
 	for (int i = 0; i < size; i++) {
 		if (bt_codec_get_val(&cap_array[i], BT_CODEC_LC3_FREQ, &element)) {
+			LOG_INF("Headset CAP frequency bit: %d", element->data.data[0]);
+
 			if (element->data.data[0] & BT_AUDIO_CODEC_CAPABILIY_FREQ) {
 				return true;
 			}
@@ -755,6 +765,8 @@ static bool valid_codec_cap_check(struct bt_codec cap_array[], size_t size)
 
 	return false;
 }
+
+static uint8_t test_counter;
 
 static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struct bt_bap_ep *ep,
 			     struct bt_bap_unicast_client_discover_params *params)
@@ -797,6 +809,8 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 			for (int i = 0; i < codec->meta_count; i++) {
 				store_loc->meta[i].data.data = store_loc->meta[i].value;
 			}
+
+			test_counter++;
 		} else {
 			LOG_WRN("No more space. Increase CODEC_CAPAB_COUNT_MAX");
 		}
@@ -812,14 +826,19 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 
 	/* At this point the location/channel index of the headset is always known */
 	for (int i = 0; i < CONFIG_CODEC_CAP_COUNT_MAX; i++) {
-		memcpy(&headsets[channel_index].sink_codec_cap[i], &temp_cap[temp_cap_index].codec,
+		memcpy(&headsets[channel_index].sink_codec_cap[i], &temp_cap[temp_cap_index].codec[i],
 		       (sizeof(struct bt_codec)));
 	}
 
 	if (ep != NULL) {
+		LOG_INF("Endpoint %d", params->num_eps);
 		/* params->num_eps is an increasing index that starts at 0 */
-		if (params->num_eps > 0) {
-			LOG_WRN("More than one sink endpoints found, ep idx 0 is used by default");
+		// if (params->num_eps > 0) {
+		// 	LOG_WRN("More than one sink endpoints found, ep idx 0 is used by default");
+		// 	return;
+		// }
+
+		if (params->num_eps != 0) {
 			return;
 		}
 
@@ -832,7 +851,7 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 		return;
 	}
 
-	LOG_DBG("Sink discover complete: err %d", params->err);
+	LOG_INF("Sink discover complete: err %d", params->err);
 
 	(void)memset(params, 0, sizeof(*params));
 
@@ -843,8 +862,7 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 	}
 #endif /* (CONFIG_BT_VCP_VOL_CTLR ) */
 
-	if (valid_codec_cap_check(headsets[channel_index].sink_codec_cap,
-				  ARRAY_SIZE(headsets[channel_index].sink_codec_cap))) {
+	if (valid_codec_cap_check(headsets[channel_index].sink_codec_cap, test_counter)) {
 		if (conn == headsets[AUDIO_CH_L].headset_conn) {
 			bt_codec_allocation_set(&lc3_preset_sink.codec,
 						BT_AUDIO_LOCATION_FRONT_LEFT);
@@ -878,6 +896,8 @@ static void discover_sink_cb(struct bt_conn *conn, struct bt_codec *codec, struc
 }
 
 #if (CONFIG_BT_AUDIO_RX)
+static uint8_t test_counter_source;
+
 static void discover_source_cb(struct bt_conn *conn, struct bt_codec *codec, struct bt_bap_ep *ep,
 			       struct bt_bap_unicast_client_discover_params *params)
 {
@@ -920,6 +940,8 @@ static void discover_source_cb(struct bt_conn *conn, struct bt_codec *codec, str
 			for (int i = 0; i < codec->meta_count; i++) {
 				store_loc->meta[i].data.data = store_loc->meta[i].value;
 			}
+
+			test_counter_source++;
 		} else {
 			LOG_WRN("No more space. Increase CODEC_CAPAB_COUNT_MAX");
 		}
@@ -934,9 +956,9 @@ static void discover_source_cb(struct bt_conn *conn, struct bt_codec *codec, str
 	}
 
 	/* At this point the location/channel index of the headset is always known */
-	for (int i = 0; i < CONFIG_CODEC_CAP_COUNT_MAX; i++) {
+	for (int i = 0; i < test_counter_source; i++) {
 		memcpy(&headsets[channel_index].source_codec_cap[i],
-		       &temp_cap[temp_cap_index].codec, (sizeof(struct bt_codec)));
+		       &temp_cap[temp_cap_index].codec[i], (sizeof(struct bt_codec)));
 	}
 
 	if (ep != NULL) {
@@ -955,12 +977,12 @@ static void discover_source_cb(struct bt_conn *conn, struct bt_codec *codec, str
 		return;
 	}
 
-	LOG_DBG("Source discover complete: err %d", params->err);
+	LOG_INF("Source discover complete: err %d", params->err);
 
 	(void)memset(params, 0, sizeof(*params));
 
 	if (valid_codec_cap_check(headsets[channel_index].source_codec_cap,
-				  ARRAY_SIZE(headsets[channel_index].source_codec_cap))) {
+				  test_counter_source)) {
 		if (conn == headsets[AUDIO_CH_L].headset_conn) {
 			bt_codec_allocation_set(&lc3_preset_source.codec,
 						BT_AUDIO_LOCATION_FRONT_LEFT);
@@ -1027,7 +1049,7 @@ static void bond_connect(const struct bt_bond_info *info, void *user_data)
 					&conn);
 		if (ret) {
 			LOG_WRN("Create ACL connection failed: %d", ret);
-			ble_acl_start_scan();
+			// ble_acl_start_scan();
 		}
 	}
 }
@@ -1055,7 +1077,7 @@ static int device_found(uint8_t type, const uint8_t *data, uint8_t data_len,
 		ret = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN, CONNECTION_PARAMETERS, &conn);
 		if (ret) {
 			LOG_ERR("Could not init connection");
-			ble_acl_start_scan();
+			// ble_acl_start_scan();
 			return ret;
 		}
 
@@ -1109,9 +1131,9 @@ static void on_device_found(const bt_addr_le_t *addr, int8_t rssi, uint8_t type,
 		/* Fall through */
 	case BT_GAP_ADV_TYPE_SCAN_RSP:
 		/* Note: May lead to connection creation */
-		if (bonded_num < CONFIG_BT_MAX_PAIRED) {
+		// if (bonded_num < CONFIG_BT_MAX_PAIRED) {
 			ad_parse(p_ad, addr);
-		}
+		// }
 		break;
 	default:
 		break;
@@ -1162,7 +1184,7 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 		LOG_ERR("ACL connection to %s failed, error %d", addr, err);
 
 		bt_conn_unref(conn);
-		ble_acl_start_scan();
+		// ble_acl_start_scan();
 
 		return;
 	}
@@ -1224,7 +1246,7 @@ static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 		disconnected_headset_cleanup(channel_index);
 	}
 
-	ble_acl_start_scan();
+	// ble_acl_start_scan();
 }
 
 static int discover_sink(struct bt_conn *conn)
@@ -1358,6 +1380,8 @@ static int iso_stream_send(uint8_t const *const data, size_t size, struct le_aud
 	int ret;
 	struct net_buf *buf;
 
+	static uint32_t test_ctr;
+
 	/* net_buf_alloc allocates buffers for APP->NET transfer over HCI RPMsg,
 	 * but when these buffers are released it is not guaranteed that the
 	 * data has actually been sent. The data might be queued on the NET core,
@@ -1389,6 +1413,12 @@ static int iso_stream_send(uint8_t const *const data, size_t size, struct le_aud
 
 	atomic_inc(&headset.iso_tx_pool_alloc);
 
+	test_ctr++;
+	
+	if ((test_ctr % 1000) == 0) {
+		LOG_INF("Sent: %d", test_ctr);
+	}
+	
 	ret = bt_bap_stream_send(&headset.sink_stream, buf,
 				 get_and_incr_seq_num(&headset.sink_stream), BT_ISO_TIMESTAMP_NONE);
 	if (ret < 0) {
@@ -1558,13 +1588,15 @@ int le_audio_volume_down(void)
 
 int le_audio_volume_mute(void)
 {
-	int ret;
+	// int ret;
 
-	ret = ble_vcs_volume_mute();
-	if (ret) {
-		LOG_WRN("Failed to mute volume");
-		return ret;
-	}
+	// ret = ble_vcs_volume_mute();
+	// if (ret) {
+	// 	LOG_WRN("Failed to mute volume");
+	// 	return ret;
+	// }
+
+	ble_acl_start_scan();
 
 	return 0;
 }

@@ -205,6 +205,8 @@ static bool scan_recv_cb(const struct bt_le_scan_recv_info *info, struct net_buf
 
 	bt_data_parse(ad, adv_data_parse, (void *)&bis_name);
 
+	LOG_INF("Broadcast source: %s", bis_name.name);
+
 	if (strlen(bis_name.name) ==
 	    strlen(brdcast_src_names[active_stream.brdcast_src_name_idx])) {
 		if (strncmp(bis_name.name, brdcast_src_names[active_stream.brdcast_src_name_idx],
