@@ -212,6 +212,7 @@ void streamctrl_encoded_data_send(void const *const data, size_t size, uint8_t n
 				LOG_WRN("Problem with sending LE audio data, ret: %d", ret);
 			}
 		}
+
 		prev_ret = ret;
 	}
 }
@@ -466,7 +467,7 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 		break;
 
 	case BT_MGMT_EXT_ADV_READY:
-		LOG_INF("Ext adv ready!");
+		LOG_INF("Ext adv ready");
 
 		le_audio_ext_adv_set(msg->ext_adv);
 		break;

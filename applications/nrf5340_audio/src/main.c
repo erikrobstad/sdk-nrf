@@ -33,11 +33,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(main, CONFIG_MAIN_LOG_LEVEL);
 
-#if defined(CONFIG_INIT_STACKS)
-/* Used for printing stack usage */
-extern struct k_thread z_main_thread;
-#endif /* defined(CONFIG_INIT_STACKS) */
-
 static atomic_t ble_core_is_ready = (atomic_t) false;
 static struct board_version board_rev;
 

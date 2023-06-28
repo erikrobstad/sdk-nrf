@@ -93,7 +93,7 @@ BUILD_ASSERT(ARRAY_SIZE(headsets) >= CONFIG_BT_BAP_UNICAST_CLIENT_ASE_SRC_COUNT,
 
 static le_audio_receive_cb receive_cb;
 static le_audio_timestamp_cb timestamp_cb;
-static le_audio_nonvalid_iso_cfgs_cb nonvalid_configs_cb;
+static le_audio_nonvalid_iso_cfgs_cb nonvalid_configs_cb; // TODO: This should be zbus event
 
 static struct bt_bap_unicast_group *unicast_group;
 
@@ -207,7 +207,7 @@ static int headset_pres_delay_find(uint8_t index, uint32_t *pres_dly_us)
 static bool ep_state_check(struct bt_bap_ep *ep, enum bt_bap_ep_state state)
 {
 	if (ep == NULL) {
-		LOG_DBG("Endpoint is NULL");
+		/* If an endpoint is NULL it is not in any of the states */
 		return false;
 	}
 
@@ -1430,5 +1430,5 @@ int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_
 
 int le_audio_disable(void)
 {
-	return 0;
+	return -ENOTSUP;
 }

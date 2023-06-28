@@ -66,7 +66,7 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 		}
 
 		if (IS_ENABLED(CONFIG_BT_PERIPHERAL)) {
-			/* Start adv? */
+			/* TODO: Start adv? */
 		}
 
 		return;
@@ -78,7 +78,7 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	LOG_INF("Connected: %s", addr);
 
-#if defined(CONFIG_BT_MAX_CONN)
+#if defined(CONFIG_BT_MAX_CONN) // TODO: What if CONFIG_BT_MAX_CONN is not enabled?
 	if (IS_ENABLED(CONFIG_BT_CENTRAL)) {
 		if (num_conn < CONFIG_BT_MAX_CONN) {
 			bt_mgmt_scan_start(0, 0);
@@ -94,7 +94,6 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 			conn_tx_pwr = CONFIG_NRF_21540_MAIN_DBM;
 		} else {
 			conn_tx_pwr = CONFIG_BLE_CONN_TX_POWER_DBM;
-
 		}
 
 		ret = ble_hci_vsc_conn_tx_pwr_set(conn_handle, conn_tx_pwr);
@@ -197,7 +196,7 @@ void bt_mgmt_conn_disconnect(struct bt_conn *conn, uint8_t reason)
 		if (ret) {
 			LOG_ERR("Failed to disconnect connection %p (%d)", (void *)conn, ret);
 		}
-	}
+	} // TODO: else print warning?
 }
 
 int bt_mgmt_init(void)

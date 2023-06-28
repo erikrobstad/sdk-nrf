@@ -617,7 +617,7 @@ int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pr
 
 void le_audio_conn_disconnected(struct bt_conn *conn)
 {
-	LOG_DBG("Not used");
+	LOG_DBG("Disconnection handler not used in CIS headset");
 }
 
 void le_audio_conn_set(struct bt_conn *conn)
@@ -750,9 +750,11 @@ int le_audio_send(struct encoded_audio enc_audio)
 		net_buf_unref(buf);
 		atomic_dec(&iso_tx_pool_alloc);
 	}
-#endif /* (CONFIG_BT_AUDIO_TX) */
 
-	return 0;
+	return ret;
+#else
+	return -ENOTSUP;
+#endif /* (CONFIG_BT_AUDIO_TX) */
 }
 
 int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_cb,
@@ -771,5 +773,5 @@ int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_
 
 int le_audio_disable(void)
 {
-	return 0;
+	return -ENOTSUP;
 }
