@@ -213,11 +213,11 @@ void streamctrl_encoded_data_send(void const *const data, size_t size, uint8_t n
 				LOG_WRN("Problem with sending LE audio data, ret: %d", ret);
 			}
 		}
+
 		prev_ret = ret;
 	}
 }
 
-#if (CONFIG_AUDIO_TEST_TONE)
 #define TEST_TONE_BASE_FREQ_HZ 1000
 
 static int test_tone_button_press(void)
@@ -251,7 +251,6 @@ static int test_tone_button_press(void)
 
 	return 0;
 }
-#endif /* (CONFIG_AUDIO_TEST_TONE) */
 
 /* TODO: Change to event based approach */
 static void nonvalid_iso_cfgs(struct bt_conn *conn)
@@ -264,6 +263,7 @@ static void button_msg_sub_thread(void)
 {
 	int ret;
 	const struct zbus_channel *chan;
+	bool alternate = true;
 
 	while (1) {
 		ret = zbus_sub_wait(&button_sub, &chan, K_FOREVER);
@@ -340,12 +340,28 @@ static void button_msg_sub_thread(void)
 				if (ret) {
 					LOG_WRN("Failed to mute volume");
 				}
-				break;
-			}
 
-			ret = le_audio_user_defined_button_press(LE_AUDIO_USER_DEFINED_ACTION_2);
-			if (ret) {
-				LOG_WRN("User defined button 5 action failed, ret: %d", ret);
+				break;
+			} else if (IS_ENABLED(CONFIG_BT_BAP_SCAN_DELEGATOR)) {
+				/* Will eventually be handled by different applications */
+				le_audio_disable();
+				if (alternate) {
+					ret = bt_mgmt_scan_start(
+						0, 0, BT_MGMT_SCAN_TYPE_BROADCAST,
+						CONFIG_BT_AUDIO_BROADCAST_NAME_ALT);
+					alternate = false;
+				} else {
+					ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST,
+								 CONFIG_BT_AUDIO_BROADCAST_NAME);
+					alternate = true;
+				}
+
+				if (ret) {
+					LOG_WRN("Failed to start scanning for broadcaster: %d",
+						ret);
+				}
+
+				break;
 			}
 
 			break;
@@ -439,8 +455,21 @@ static void le_audio_msg_sub_thread(void)
 			LOG_INF("Presentation delay %d us is set by initiator", pres_delay_us);
 			break;
 
+		case LE_AUDIO_EVT_SYNC_LOST:
+			if (IS_ENABLED(CONFIG_BT_OBSERVER)) {
+				ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST, NULL);
+				if (ret) {
+					LOG_ERR("Failed to restart scanning: %d", ret);
+					break;
+				}
+
+				LOG_INF("Restarted scanning for broadcaster");
+			}
+
+			break;
+
 		default:
-			LOG_WRN("Unexpected/unhandled event: %d", event);
+			LOG_WRN("Unexpected/unhandled le_audio event: %d", event);
 			break;
 		}
 
@@ -484,9 +513,12 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 		le_audio_conn_set(msg->conn);
 		bt_rend_discover(msg->conn);
 		break;
-
+	case BT_MGMT_PA_SYNC_OBJECT_READY:
+		LOG_INF("PA sync object ready");
+		le_audio_pa_sync_set(msg->pa_sync, msg->broadcast_id);
+		break;
 	default:
-		LOG_WRN("Unexpected/unhandled event: %d", event);
+		LOG_WRN("Unexpected/unhandled bt_mgmt event: %d", event);
 		break;
 	}
 }
@@ -550,12 +582,12 @@ int streamctrl_start(void)
 		ret = bt_mgmt_adv_start(ext_adv, ext_adv_size, per_adv, per_adv_size, false);
 		ERR_CHK(ret);
 	} else if ((CONFIG_AUDIO_DEV == GATEWAY) && IS_ENABLED(CONFIG_TRANSPORT_CIS)) {
-		/* Scan interval and scan window as two times of ISO interval */
-		/** TODO: Make scan interval and scan window dynamic (make a CONFIG for ISO
-		 *  interval?)
-		 */
-
-		bt_mgmt_scan_start(0, 0);
+		ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_CONN, CONFIG_BT_DEVICE_NAME);
+		ERR_CHK_MSG(ret, "Failed to start scanning");
+	} else if ((CONFIG_AUDIO_DEV == HEADSET) && IS_ENABLED(CONFIG_TRANSPORT_BIS)) {
+		ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST,
+					 CONFIG_BT_AUDIO_BROADCAST_NAME);
+		ERR_CHK_MSG(ret, "Failed to start scanning");
 	}
 
 	return 0;

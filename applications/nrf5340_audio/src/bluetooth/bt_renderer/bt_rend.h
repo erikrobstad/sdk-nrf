@@ -28,7 +28,7 @@ int bt_rend_volume_down(void);
  *
  * @param	volume		Value to set the volume to (0-255)
  * @param	from_vcp	Describe if the function was called from a service
- *				or from somewhere else (buttons, shell etc)
+ *				or from somewhere else (buttons, shell, etc)
  *
  * @return	0 if success, error otherwise
  */
@@ -38,7 +38,7 @@ int bt_rend_volume_set(uint8_t volume, bool from_vcp);
  * @brief	Mute the volume
  *
  * @param	from_vcp	Describe if the function was called from a service
- *				or from somewhere else (buttons, shell etc)
+ *				or from somewhere else (buttons, shell, etc)
  *
  * @return	0 if success, error otherwise
  */

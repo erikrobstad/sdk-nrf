@@ -32,6 +32,13 @@ LOG_MODULE_REGISTER(bt_mgmt, CONFIG_BT_MGMT_LOG_LEVEL);
  * Buffer added as this will not add to bootup time
  */
 #define BT_ENABLE_TIMEOUT_MS 100
+
+#ifndef CONFIG_BT_MAX_CONN
+#define MAX_CONN_NUM 0
+#else
+#define MAX_CONN_NUM CONFIG_BT_MAX_CONN
+#endif
+
 K_SEM_DEFINE(sem_bt_enabled, 0, 1);
 static struct bt_le_oob _oob = {.addr = 0};
 
@@ -78,7 +85,10 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 		bt_conn_unref(conn);
 
 		if (IS_ENABLED(CONFIG_BT_CENTRAL)) {
-			bt_mgmt_scan_start(0, 0);
+			ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_CONN, NULL);
+			if (ret) {
+				LOG_ERR("Failed to restart scanning: %d", ret);
+			}
 		}
 
 		if (IS_ENABLED(CONFIG_BT_PERIPHERAL)) {
@@ -94,13 +104,12 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 	(void)bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	LOG_INF("Connected: %s", addr);
 
-#if defined(CONFIG_BT_MAX_CONN)
-	if (IS_ENABLED(CONFIG_BT_CENTRAL)) {
-		if (num_conn < CONFIG_BT_MAX_CONN) {
-			bt_mgmt_scan_start(0, 0);
+	if (IS_ENABLED(CONFIG_BT_CENTRAL) && (num_conn < MAX_CONN_NUM)) {
+		ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_CONN, NULL);
+		if (ret) {
+			LOG_ERR("Failed to resume scanning: %d", ret);
 		}
 	}
-#endif /* (CONFIG_BT_MAX_CONN) */
 
 	ret = bt_hci_get_conn_handle(conn, &conn_handle);
 	if (ret) {
@@ -167,7 +176,10 @@ static void disconnected_cb(struct bt_conn *conn, uint8_t reason)
 	}
 
 	if (IS_ENABLED(CONFIG_BT_CENTRAL)) {
-		bt_mgmt_scan_start(0, 0);
+		ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_CONN, NULL);
+		if (ret) {
+			LOG_ERR("Failed to restart scanning: %d", ret);
+		}
 	}
 }
 
@@ -202,18 +214,6 @@ static struct bt_conn_cb conn_callbacks = {
 	.security_changed = security_changed_cb,
 #endif /* defined(CONFIG_BT_SMP) */
 };
-
-void bt_mgmt_conn_disconnect(struct bt_conn *conn, uint8_t reason)
-{
-	int ret;
-
-	if (IS_ENABLED(CONFIG_BT_CONN)) {
-		ret = bt_conn_disconnect(conn, reason);
-		if (ret) {
-			LOG_ERR("Failed to disconnect connection %p (%d)", (void *)conn, ret);
-		}
-	}
-}
 
 static void bt_enabled_cb(int err)
 {
@@ -299,6 +299,33 @@ static int random_static_addr_cfg(void)
 	 * then a random address is created
 	 */
 	return -ENXIO;
+}
+
+int bt_mgmt_pa_sync_delete(struct bt_le_per_adv_sync *pa_sync)
+{
+	if (IS_ENABLED(CONFIG_BT_PER_ADV_SYNC)) {
+		int ret;
+
+		ret = bt_le_per_adv_sync_delete(pa_sync);
+		if (ret) {
+			LOG_ERR("Failed to delete PA sync");
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+void bt_mgmt_conn_disconnect(struct bt_conn *conn, uint8_t reason)
+{
+	if (IS_ENABLED(CONFIG_BT_CONN)) {
+		int ret;
+
+		ret = bt_conn_disconnect(conn, reason);
+		if (ret) {
+			LOG_ERR("Failed to disconnect connection %p (%d)", (void *)conn, ret);
+		}
+	}
 }
 
 int bt_mgmt_init(void)

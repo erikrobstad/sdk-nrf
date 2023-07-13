@@ -568,6 +568,8 @@ static int initialize(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestm
 
 int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
 {
+	ARG_UNUSED(action);
+
 	return 0;
 }
 
@@ -607,14 +609,35 @@ int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pr
 	return 0;
 }
 
+void le_audio_conn_set(struct bt_conn *conn)
+{
+	ARG_UNUSED(conn);
+
+	default_conn = conn;
+}
+
+int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
+{
+	ARG_UNUSED(pa_sync);
+	ARG_UNUSED(broadcast_id);
+
+	LOG_WRN("Not used in CIS headset");
+	return -ENOTSUP;
+}
+
 void le_audio_conn_disconnected(struct bt_conn *conn)
 {
+	ARG_UNUSED(conn);
+
 	LOG_DBG("Not used");
 }
 
-void le_audio_conn_set(struct bt_conn *conn)
+int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
 {
-	default_conn = conn;
+	ARG_UNUSED(ext_adv);
+
+	LOG_DBG("No need for ext_adv in CIS headset");
+	return -ENOTSUP;
 }
 
 void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodic)
@@ -623,12 +646,6 @@ void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodi
 
 	*adv = ad_peer;
 	*adv_size = ARRAY_SIZE(ad_peer);
-}
-
-int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
-{
-	LOG_DBG("No need for ext_adv in CIS headset");
-	return -ENOTSUP;
 }
 
 int le_audio_play_pause(void)
@@ -712,6 +729,8 @@ int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_
 		    le_audio_nonvalid_iso_cfgs_cb nonvalid_cfgs_cb)
 {
 	int ret;
+
+	ARG_UNUSED(nonvalid_cfgs_cb);
 
 	ret = initialize(recv_cb, timestmp_cb);
 	if (ret) {

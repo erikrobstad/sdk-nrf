@@ -33,6 +33,7 @@ enum le_audio_evt_type {
 	LE_AUDIO_EVT_PRES_DELAY_SET,
 	LE_AUDIO_EVT_STREAMING,
 	LE_AUDIO_EVT_NOT_STREAMING,
+	LE_AUDIO_EVT_SYNC_LOST,
 	LE_AUDIO_EVT_NUM_EVTS
 };
 
@@ -46,12 +47,15 @@ enum bt_mgmt_evt_type {
 	BT_MGMT_DISCONNECTED,
 	BT_MGMT_SECURITY_CHANGED,
 	BT_MGMT_EXT_ADV_READY,
+	BT_MGMT_PA_SYNC_OBJECT_READY,
 };
 
 struct bt_mgmt_msg {
 	enum bt_mgmt_evt_type event;
 	struct bt_conn *conn;
 	struct bt_le_ext_adv *ext_adv;
+	struct bt_le_per_adv_sync *pa_sync;
+	uint32_t broadcast_id;
 };
 
 enum volume_evt_type {

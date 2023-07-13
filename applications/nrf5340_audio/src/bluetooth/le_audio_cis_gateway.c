@@ -1236,11 +1236,17 @@ static int initialize(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestm
 
 int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
 {
+	ARG_UNUSED(action);
+
 	return 0;
 }
 
 int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay)
 {
+	ARG_UNUSED(bitrate);
+	ARG_UNUSED(sampling_rate);
+	ARG_UNUSED(pres_delay);
+
 	LOG_WRN("Getting config from gateway is not yet supported");
 	return -ENOTSUP;
 }
@@ -1270,13 +1276,28 @@ void le_audio_conn_disconnected(struct bt_conn *conn)
 
 int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
 {
+	ARG_UNUSED(ext_adv);
+
 	LOG_WRN("No extended advertiser in CIS gateway");
 	return -ENOTSUP;
 }
 
 void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodic)
 {
+	ARG_UNUSED(adv);
+	ARG_UNUSED(adv_size);
+	ARG_UNUSED(periodic);
+
 	LOG_WRN("No advertiser in CIS gateway");
+}
+
+int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
+{
+	ARG_UNUSED(pa_sync);
+	ARG_UNUSED(broadcast_id);
+
+	LOG_WRN("Not used in CIS gateway");
+	return -ENOTSUP;
 }
 
 int le_audio_play_pause(void)

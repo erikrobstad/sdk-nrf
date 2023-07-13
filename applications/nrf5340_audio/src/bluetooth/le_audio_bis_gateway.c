@@ -282,13 +282,43 @@ static void bt_codec_allocation_set(struct bt_codec_data *codec, enum bt_audio_l
 	codec->data.data_len = 4;
 }
 
-void le_audio_conn_disconnected(struct bt_conn *conn)
+int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
 {
-	LOG_WRN("No conn used in BIS");
+	ARG_UNUSED(action);
+
+	return 0;
+}
+
+int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay)
+{
+	ARG_UNUSED(bitrate);
+	ARG_UNUSED(sampling_rate);
+	ARG_UNUSED(pres_delay);
+
+	LOG_WRN("Getting config from gateway is not yet supported");
+	return -ENOTSUP;
 }
 
 void le_audio_conn_set(struct bt_conn *conn)
 {
+	ARG_UNUSED(conn);
+
+	LOG_WRN("No conn used in BIS");
+}
+
+int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
+{
+	ARG_UNUSED(pa_sync);
+	ARG_UNUSED(broadcast_id);
+
+	LOG_WRN("Not used in BIS gateway");
+	return -ENOTSUP;
+}
+
+void le_audio_conn_disconnected(struct bt_conn *conn)
+{
+	ARG_UNUSED(conn);
+
 	LOG_WRN("No conn used in BIS");
 }
 
@@ -317,17 +347,6 @@ void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodi
 		*adv = ext_ad;
 		*adv_size = ARRAY_SIZE(ext_ad);
 	}
-}
-
-int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
-{
-	return 0;
-}
-
-int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay)
-{
-	LOG_WRN("Getting config from gateway is not yet supported");
-	return -ENOTSUP;
 }
 
 int le_audio_play_pause(void)
@@ -438,6 +457,7 @@ int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_
 		    le_audio_nonvalid_iso_cfgs_cb nonvalid_cfgs_cb)
 {
 	int ret;
+
 	struct bt_bap_broadcast_source_stream_param stream_params[ARRAY_SIZE(audio_streams)];
 	struct bt_codec_data bis_codec_data[ARRAY_SIZE(stream_params)];
 	struct bt_bap_broadcast_source_subgroup_param
@@ -450,6 +470,8 @@ int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_
 	}
 
 	ARG_UNUSED(recv_cb);
+	ARG_UNUSED(nonvalid_cfgs_cb);
+
 	LOG_INF("Enabling broadcast gateway %s", CONFIG_BT_AUDIO_BROADCAST_NAME);
 
 	if (timestmp_cb == NULL) {
