@@ -611,8 +611,6 @@ int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pr
 
 void le_audio_conn_set(struct bt_conn *conn)
 {
-	ARG_UNUSED(conn);
-
 	default_conn = conn;
 }
 
@@ -629,7 +627,7 @@ void le_audio_conn_disconnected(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	LOG_DBG("Not used");
+	LOG_DBG("Disconnection handler not used in CIS headset");
 }
 
 int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
@@ -642,7 +640,10 @@ int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
 
 void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodic)
 {
-	ARG_UNUSED(periodic);
+	if (periodic) {
+		LOG_WRN("No periodic advertisement for CIS headset");
+		return;
+	}
 
 	*adv = ad_peer;
 	*adv_size = ARRAY_SIZE(ad_peer);
@@ -720,9 +721,11 @@ int le_audio_send(struct encoded_audio enc_audio)
 		net_buf_unref(buf);
 		atomic_dec(&iso_tx_pool_alloc);
 	}
-#endif /* (CONFIG_BT_AUDIO_TX) */
 
-	return 0;
+	return ret;
+#else
+	return -ENOTSUP;
+#endif /* (CONFIG_BT_AUDIO_TX) */
 }
 
 int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_cb,
@@ -743,5 +746,5 @@ int le_audio_enable(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestmp_
 
 int le_audio_disable(void)
 {
-	return 0;
+	return -ENOTSUP;
 }

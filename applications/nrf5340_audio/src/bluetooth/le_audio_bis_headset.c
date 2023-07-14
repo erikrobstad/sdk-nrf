@@ -19,7 +19,6 @@
 #include "nrf5340_audio_common.h"
 #include "hw_codec.h"
 #include "channel_assignment.h"
-#include "bt_mgmt.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(bis_headset, CONFIG_BLE_LOG_LEVEL);
@@ -210,7 +209,7 @@ static void pa_sync_lost_cb(struct bt_bap_broadcast_sink *sink)
 		return;
 	}
 
-	le_audio_event_publish(LE_AUDIO_EVT_SYNC_LOST);
+	le_audio_event_publish(LE_AUDIO_EVT_PA_SYNC_LOST);
 }
 
 /**

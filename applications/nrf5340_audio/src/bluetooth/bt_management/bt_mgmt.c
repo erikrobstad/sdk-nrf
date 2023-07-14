@@ -40,10 +40,11 @@ LOG_MODULE_REGISTER(bt_mgmt, CONFIG_BT_MGMT_LOG_LEVEL);
 #endif
 
 K_SEM_DEFINE(sem_bt_enabled, 0, 1);
-static struct bt_le_oob _oob = {.addr = 0};
 
 ZBUS_CHAN_DEFINE(bt_mgmt_chan, struct bt_mgmt_msg, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
+
+static struct bt_le_oob _oob = {.addr = 0};
 
 /**
  * @brief	Iterative function used to find connected conns
@@ -92,7 +93,7 @@ static void connected_cb(struct bt_conn *conn, uint8_t err)
 		}
 
 		if (IS_ENABLED(CONFIG_BT_PERIPHERAL)) {
-			/* Start adv? */
+			/* TODO: Start adv? */
 		}
 
 		return;
@@ -221,6 +222,7 @@ static void bt_enabled_cb(int err)
 		LOG_ERR("Bluetooth init failed (err code: %d)", err);
 		ERR_CHK(err);
 	}
+
 	k_sem_give(&sem_bt_enabled);
 
 	LOG_DBG("Bluetooth initialized");
@@ -245,22 +247,22 @@ static int bonding_clear_check(void)
 	return 0;
 }
 
+/* It may be confusing to print the MAC when privacy is enabled.
+ * This address will change. Have a look at BT_LOG_SNIFFER_INFO for debugging
+ * and sniffer purposes
+ */
 static void mac_print(void)
 {
 	int ret;
-	/* It may be confusing to print the MAC when privacy is enabled.
-	 * This address will change. Have a look at BT_LOG_SNIFFER_INFO for debugging
-	 * and sniffer purposes
-	 */
-
 	char dev[BT_ADDR_LE_STR_LEN];
+
 	/* This call will create a new RPA */
 	ret = bt_le_oob_get_local(BT_ID_DEFAULT, &_oob);
 	ERR_CHK(ret);
 
 	(void)bt_addr_le_to_str(&_oob.addr, dev, BT_ADDR_LE_STR_LEN);
 	if (IS_ENABLED(CONFIG_BT_PRIVACY)) {
-		LOG_INF("MAC: %s Valid until next RPA timeout", dev);
+		LOG_INF("MAC: %s - Valid until next RPA timeout", dev);
 	} else {
 		LOG_INF("MAC: %s", dev);
 	}
@@ -295,10 +297,12 @@ static int random_static_addr_cfg(void)
 	}
 
 	LOG_WRN("Unable to read from FICR");
+
 	/* If no address can be created based on FICR,
-	 * then a random address is created
+	 * then a random address can be created
 	 */
-	return -ENXIO;
+
+	return 0;
 }
 
 int bt_mgmt_pa_sync_delete(struct bt_le_per_adv_sync *pa_sync)
@@ -311,6 +315,8 @@ int bt_mgmt_pa_sync_delete(struct bt_le_per_adv_sync *pa_sync)
 			LOG_ERR("Failed to delete PA sync");
 			return ret;
 		}
+	} else {
+		LOG_WRN("Periodic advertisement sync not enabled");
 	}
 
 	return 0;
@@ -325,6 +331,8 @@ void bt_mgmt_conn_disconnect(struct bt_conn *conn, uint8_t reason)
 		if (ret) {
 			LOG_ERR("Failed to disconnect connection %p (%d)", (void *)conn, ret);
 		}
+	} else {
+		LOG_WRN("BT conn not enabled");
 	}
 }
 

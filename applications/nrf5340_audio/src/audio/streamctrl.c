@@ -295,7 +295,6 @@ static void button_msg_sub_thread(void)
 			}
 
 			break;
-
 		case BUTTON_VOLUME_UP:
 			ret = bt_rend_volume_up();
 			if (ret) {
@@ -303,7 +302,6 @@ static void button_msg_sub_thread(void)
 			}
 
 			break;
-
 		case BUTTON_VOLUME_DOWN:
 			ret = bt_rend_volume_down();
 			if (ret) {
@@ -311,7 +309,6 @@ static void button_msg_sub_thread(void)
 			}
 
 			break;
-
 		case BUTTON_4:
 			if (IS_ENABLED(CONFIG_AUDIO_TEST_TONE)) {
 				if (IS_ENABLED(CONFIG_WALKIE_TALKIE_DEMO)) {
@@ -333,7 +330,6 @@ static void button_msg_sub_thread(void)
 			}
 
 			break;
-
 		case BUTTON_5:
 			if (IS_ENABLED(CONFIG_AUDIO_MUTE)) {
 				ret = bt_rend_mute(false);
@@ -342,7 +338,7 @@ static void button_msg_sub_thread(void)
 				}
 
 				break;
-			} else if (IS_ENABLED(CONFIG_BT_BAP_SCAN_DELEGATOR)) {
+			} else if (IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SINK)) {
 				/* Will eventually be handled by different applications */
 				le_audio_disable();
 				if (alternate) {
@@ -365,7 +361,6 @@ static void button_msg_sub_thread(void)
 			}
 
 			break;
-
 		default:
 			LOG_WRN("Unexpected/unhandled button id: %d", msg.button_pin);
 		}
@@ -410,7 +405,6 @@ static void le_audio_msg_sub_thread(void)
 			ERR_CHK(ret);
 
 			break;
-
 		case LE_AUDIO_EVT_NOT_STREAMING:
 			LOG_DBG("LE audio evt not_streaming");
 
@@ -425,7 +419,6 @@ static void le_audio_msg_sub_thread(void)
 			ERR_CHK(ret);
 
 			break;
-
 		case LE_AUDIO_EVT_CONFIG_RECEIVED:
 			LOG_DBG("Config received");
 
@@ -438,7 +431,6 @@ static void le_audio_msg_sub_thread(void)
 			LOG_DBG("Sampling rate: %d Hz", sampling_rate_hz);
 			LOG_DBG("Bitrate: %d bps", bitrate_bps);
 			break;
-
 		case LE_AUDIO_EVT_PRES_DELAY_SET:
 			ret = le_audio_config_get(NULL, NULL, &pres_delay_us);
 			if (ret) {
@@ -454,8 +446,7 @@ static void le_audio_msg_sub_thread(void)
 
 			LOG_INF("Presentation delay %d us is set by initiator", pres_delay_us);
 			break;
-
-		case LE_AUDIO_EVT_SYNC_LOST:
+		case LE_AUDIO_EVT_PA_SYNC_LOST:
 			if (IS_ENABLED(CONFIG_BT_OBSERVER)) {
 				ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST, NULL);
 				if (ret) {
@@ -467,7 +458,6 @@ static void le_audio_msg_sub_thread(void)
 			}
 
 			break;
-
 		default:
 			LOG_WRN("Unexpected/unhandled le_audio event: %d", event);
 			break;
@@ -485,6 +475,7 @@ static void le_audio_msg_sub_thread(void)
  */
 static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 {
+	int ret = 0;
 	const struct bt_mgmt_msg *msg;
 
 	msg = zbus_chan_const_msg(chan);
@@ -494,28 +485,31 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 	case BT_MGMT_CONNECTED:
 		LOG_INF("Connected");
 		break;
-
 	case BT_MGMT_DISCONNECTED:
 		LOG_INF("Disconnected");
-
 		le_audio_conn_disconnected(msg->conn);
 		break;
-
 	case BT_MGMT_EXT_ADV_READY:
-		LOG_INF("Ext adv ready!");
-
-		le_audio_ext_adv_set(msg->ext_adv);
+		LOG_INF("Ext adv ready");
+		ret = le_audio_ext_adv_set(msg->ext_adv);
+		if (ret) {
+			LOG_WRN("Failed to set extended advertisement data");
+		}
 		break;
-
 	case BT_MGMT_SECURITY_CHANGED:
 		LOG_INF("Security changed");
-
 		le_audio_conn_set(msg->conn);
-		bt_rend_discover(msg->conn);
+		ret = bt_rend_discover(msg->conn);
+		if (ret) {
+			LOG_WRN("Failed to discover rendering services");
+		}
 		break;
 	case BT_MGMT_PA_SYNC_OBJECT_READY:
 		LOG_INF("PA sync object ready");
-		le_audio_pa_sync_set(msg->pa_sync, msg->broadcast_id);
+		ret = le_audio_pa_sync_set(msg->pa_sync, msg->broadcast_id);
+		if (ret) {
+			LOG_WRN("Failed to set PA sync");
+		}
 		break;
 	default:
 		LOG_WRN("Unexpected/unhandled bt_mgmt event: %d", event);

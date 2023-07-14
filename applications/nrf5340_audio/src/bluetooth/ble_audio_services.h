@@ -16,7 +16,6 @@
  */
 typedef void (*ble_mcs_play_pause_cb)(bool play);
 
-
 /**
  * @brief  Discover MCS and included services.
  *
@@ -54,7 +53,6 @@ int ble_mcs_play_pause(struct bt_conn *conn);
  * @return 0 for success, error otherwise.
  */
 int ble_mcp_conn_disconnected(struct bt_conn *conn);
-
 
 /**
  * @brief  Initialize the Media Control Client.

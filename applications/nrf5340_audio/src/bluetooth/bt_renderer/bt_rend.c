@@ -111,6 +111,8 @@ int bt_rend_discover(struct bt_conn *conn)
 			LOG_WRN("Failed to discover VCS: %d", ret);
 			return ret;
 		}
+	} else {
+		LOG_WRN("VCS controller not enabled");
 	}
 
 	return 0;
@@ -119,6 +121,7 @@ int bt_rend_discover(struct bt_conn *conn)
 int bt_rend_init(void)
 {
 	int ret;
+	bool cfgs_enabled = false;
 
 	if (IS_ENABLED(CONFIG_BT_VCP_VOL_CTLR)) {
 		ret = bt_vol_vcs_ctlr_init();
@@ -127,6 +130,8 @@ int bt_rend_init(void)
 			LOG_WRN("Failed to initialize VCS controller: %d", ret);
 			return ret;
 		}
+
+		cfgs_enabled = true;
 	}
 
 	if (IS_ENABLED(CONFIG_BT_VCP_VOL_REND)) {
@@ -136,6 +141,12 @@ int bt_rend_init(void)
 			LOG_WRN("Failed to initialize VCS renderer: %d", ret);
 			return ret;
 		}
+
+		cfgs_enabled = true;
+	}
+
+	if (!cfgs_enabled) {
+		LOG_WRN("Both VCS controller and VCS renderer are disabled");
 	}
 
 	return 0;

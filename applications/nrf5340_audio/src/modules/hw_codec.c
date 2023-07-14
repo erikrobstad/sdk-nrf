@@ -42,7 +42,7 @@ K_THREAD_STACK_DEFINE(volume_msg_sub_thread_stack, CONFIG_VOLUME_MSG_SUB_STACK_S
 /**
  * @brief  Convert zbus volume to actual volume setting for HW codec.
  *
- *         This range for zbus volume is from 0 to 255 and the
+ * @note   The range for zbus volume is from 0 to 255 and the
  *         range for HW codec volume is from 0 to 128, this function
  *         converting the zbus volume to HW codec volume setting.
  */

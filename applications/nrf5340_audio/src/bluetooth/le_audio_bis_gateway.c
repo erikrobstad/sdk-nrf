@@ -27,11 +27,11 @@ BUILD_ASSERT(CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT <= 2,
 ZBUS_CHAN_DEFINE(le_audio_chan, struct le_audio_msg, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
 
-#define HCI_ISO_BUF_ALLOC_PER_CHAN 2
-#define STANDARD_QUALITY_16KHZ	   16000
-#define STANDARD_QUALITY_24KHZ	   24000
-#define HIGH_QUALITY_48KHZ	   48000
+#define STANDARD_QUALITY_16KHZ 16000
+#define STANDARD_QUALITY_24KHZ 24000
+#define HIGH_QUALITY_48KHZ     48000
 
+#define HCI_ISO_BUF_ALLOC_PER_CHAN 2
 /* For being able to dynamically define iso_tx_pools */
 #define NET_BUF_POOL_ITERATE(i, _)                                                                 \
 	NET_BUF_POOL_FIXED_DEFINE(iso_tx_pool_##i, HCI_ISO_BUF_ALLOC_PER_CHAN,                     \
