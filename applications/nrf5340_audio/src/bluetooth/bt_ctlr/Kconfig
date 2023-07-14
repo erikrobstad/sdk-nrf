@@ -1,0 +1,16 @@
+#
+# Copyright (c) 2023 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+rsource "Kconfig.defaults"
+
+#----------------------------------------------------------------------------#
+menu "Log levels"
+
+module = BT_CTLR_CFG
+module-str = bt-ctlr-cfg
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu # Log levels

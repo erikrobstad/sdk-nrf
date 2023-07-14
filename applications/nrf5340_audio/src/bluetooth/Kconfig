@@ -356,22 +356,22 @@ endchoice
 
 config BT_AUDIO_BROADCAST_NAME
 	string "Broadcast name"
-	depends on TRANSPORT_BIS
 	default "NRF5340_BROADCASTER"
+	# TODO: Add back 'depends on TRANSPORT_BIS' once applications are ready
 	help
 	  Name of the broadcast; not the same as BT_DEVICE_NAME.
 
 config BT_AUDIO_BROADCAST_NAME_ALT
 	string "Alternative broadcast name"
-	depends on TRANSPORT_BIS
 	default "NRF5340_BROADCASTER_ALT"
+	# TODO: Add back 'depends on TRANSPORT_BIS' once applications are ready
 	help
 	  Alternative name of the broadcast.
 
 config BT_AUDIO_USE_BROADCAST_NAME_ALT
 	bool "Use the alternative broadcast name"
 	default n
-	depends on TRANSPORT_BIS
+	# TODO: Add back 'depends on TRANSPORT_BIS' once applications are ready
 	help
 	  Use the alternative broadcast name.
 
@@ -387,8 +387,9 @@ config BT_AUDIO_BROADCAST_ENCRYPTION_KEY
 	depends on TRANSPORT_BIS
 	default "NRF5340_BIS_DEMO"
 	help
-	  Key to use for encryption and decryption; max 16 characters.
-	  Encryption keys larger than 16 characters will be cropped to 16.
+	  Key to use for encryption and decryption; max BT_ISO_BROADCAST_CODE_SIZE characters.
+	  Encryption keys larger than BT_ISO_BROADCAST_CODE_SIZE characters will be cropped to
+	  BT_ISO_BROADCAST_CODE_SIZE.
 
 config BT_AUDIO_USE_BROADCAST_ID_RANDOM
 	bool "Use a random broadcast ID"
@@ -463,6 +464,21 @@ config AURACAST
 	  When Auracast is enabled a Public Broadcast Announcement will be included when advertising.
 
 #----------------------------------------------------------------------------#
+menu "Volume control service"
+
+config BT_AUDIO_VOL_DEFAULT
+	int "Default volume"
+	range 0 255
+	default 195
+	help
+	  The default volume when starting a volume control renderer
+
+config BT_AUDIO_VOL_STEP_SIZE
+	int "Volume adjust step size"
+	range 6 32
+	default 16
+
+endmenu # Volume control service
 menu "QoS"
 
 config BT_AUDIO_PRESENTATION_DELAY_US
@@ -539,14 +555,33 @@ config BT_AUDIO_BITRATE_BROADCAST_SRC
 endmenu # QoS
 
 #----------------------------------------------------------------------------#
+rsource "bt_ctlr/Kconfig"
+
+#----------------------------------------------------------------------------#
 menu "Log levels"
 
 module = BLE
 module-str = ble
 source "subsys/logging/Kconfig.template.log_config"
 
+module = BT_MGMT
+module-str = bt_mgmt
+source "subsys/logging/Kconfig.template.log_config"
+
 module = AUDIO_SERVICES
 module-str = audio-services
+source "subsys/logging/Kconfig.template.log_config"
+
+module = BT_RENDERER
+module-str = bt_renderer
+source "subsys/logging/Kconfig.template.log_config"
+
+module = BT_VOLUME
+module-str = bt_volume
+source "subsys/logging/Kconfig.template.log_config"
+
+module = BT_CTLR_CFG
+module-str = bt-ctlr-cfg
 source "subsys/logging/Kconfig.template.log_config"
 
 endmenu # Log levels
