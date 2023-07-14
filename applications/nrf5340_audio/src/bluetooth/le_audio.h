@@ -201,11 +201,11 @@ int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_
 void le_audio_conn_disconnected(struct bt_conn *conn);
 
 /**
- * @brief	Set pointer to extended advertisement, used by BIS
+ * @brief	Set pointer to extended advertisement with periodic adv configured, used by BIS
  *
- * @note	Will also start the broadcast_source when used with BIS
+ * @note	Will also start the broadcast_source
  *
- * @param	conn	The connection pointer
+ * @param	ext_adv	Pointer to the extended advertisement
  *
  * @return	0 for success, (negative) error code otherwise
  */

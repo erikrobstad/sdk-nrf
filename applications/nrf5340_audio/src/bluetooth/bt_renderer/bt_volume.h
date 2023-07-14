@@ -11,6 +11,7 @@
 
 /**
  * @brief	Set volume to a specific value.
+ *
  * @param	volume	The absolute volume to set.
  *
  * @return 0 for success,

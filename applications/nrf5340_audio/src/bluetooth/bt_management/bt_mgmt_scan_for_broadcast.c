@@ -25,7 +25,8 @@ LOG_MODULE_DECLARE(bt_mgmt);
  */
 #define INVALID_BROADCAST_ID 0xFFFFFFFF
 #define PA_SYNC_SKIP	     5
-#define SYNC_RETRY_COUNT     6 /* similar to retries for connections */
+/* Similar to retries for connections */
+#define SYNC_RETRY_COUNT     6
 
 ZBUS_CHAN_DECLARE(bt_mgmt_chan);
 
@@ -109,6 +110,7 @@ static bool scan_check_broadcast_source(struct bt_data *data, void *user_data)
 			memcpy(source->name, data->data, data->data_len);
 			source->name[data->data_len] = '\0';
 		}
+
 		return true;
 	}
 

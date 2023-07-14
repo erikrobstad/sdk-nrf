@@ -11,6 +11,7 @@ config BT_LL_ACS_NRF53
 	help
 	  Use LE Audio Controller Subsystem Link Layer binary. Only for nRF53 NET core.
 
+#----------------------------------------------------------------------------#
 menu "Log levels"
 
 module = BLE_HCI_VSC

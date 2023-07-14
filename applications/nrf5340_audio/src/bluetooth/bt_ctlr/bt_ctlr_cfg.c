@@ -6,7 +6,6 @@
 
 #include "bt_ctlr_cfg.h"
 
-#include <stdbool.h>
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/drivers/watchdog.h>

@@ -19,6 +19,7 @@ LOG_MODULE_DECLARE(bt_mgmt);
 ZBUS_CHAN_DECLARE(bt_mgmt_chan);
 
 static struct k_work adv_work;
+
 static struct bt_le_ext_adv *ext_adv;
 
 static const struct bt_data *adv_local;

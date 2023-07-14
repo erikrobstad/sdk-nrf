@@ -89,7 +89,7 @@ static void dfu_set_bt_name(void)
 
 void bt_mgmt_dfu_start(void)
 {
-	LOG_INF("Enter SMP_SVR service only status");
+	LOG_INF("Entering SMP server mode");
 
 	bt_conn_cb_register(&dfu_conn_callbacks);
 	adv_param = *BT_LE_ADV_CONN_NAME;

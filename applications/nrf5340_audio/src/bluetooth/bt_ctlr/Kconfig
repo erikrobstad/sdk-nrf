@@ -6,7 +6,6 @@
 
 rsource "Kconfig.defaults"
 
-#----------------------------------------------------------------------------#
 menu "Log levels"
 
 module = BT_CTLR_CFG

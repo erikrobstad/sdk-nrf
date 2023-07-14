@@ -357,8 +357,7 @@ static void button_msg_sub_thread(void)
 				}
 
 				break;
-
-			} else if (IS_ENABLED(CONFIG_BT_BAP_SCAN_DELEGATOR)) {
+			} else if (IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SINK)) {
 				/* Will eventually be handled by different applications */
 				le_audio_disable();
 				if (alternate) {
@@ -474,7 +473,7 @@ static void le_audio_msg_sub_thread(void)
 
 			break;
 
-		case LE_AUDIO_EVT_SYNC_LOST:
+		case LE_AUDIO_EVT_PA_SYNC_LOST:
 			if (IS_ENABLED(CONFIG_BT_OBSERVER)) {
 				ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST, NULL);
 				if (ret) {
@@ -567,7 +566,6 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 
 	case BT_MGMT_DISCONNECTED:
 		LOG_INF("Disconnected");
-
 		le_audio_conn_disconnected(msg->conn);
 
 		ret = bt_content_control_conn_disconnected(msg->conn);
@@ -578,17 +576,21 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 		break;
 
 	case BT_MGMT_EXT_ADV_READY:
-		LOG_INF("Ext adv ready!");
-
-		le_audio_ext_adv_set(msg->ext_adv);
-
+		LOG_INF("Ext adv ready");
+		ret = le_audio_ext_adv_set(msg->ext_adv);
+		if (ret) {
+			LOG_WRN("Failed to set extended advertisement data");
+		}
 		break;
 
 	case BT_MGMT_SECURITY_CHANGED:
 		LOG_INF("Security changed");
-
 		le_audio_conn_set(msg->conn);
-		bt_rend_discover(msg->conn);
+
+		ret = bt_rend_discover(msg->conn);
+		if (ret) {
+			LOG_WRN("Failed to discover rendering services");
+		}
 
 		ret = bt_content_control_discover(msg->conn);
 		if (ret == -EALREADY) {
@@ -601,8 +603,10 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 
 	case BT_MGMT_PA_SYNC_OBJECT_READY:
 		LOG_INF("PA sync object ready");
-		le_audio_pa_sync_set(msg->pa_sync, msg->broadcast_id);
-
+		ret = le_audio_pa_sync_set(msg->pa_sync, msg->broadcast_id);
+		if (ret) {
+			LOG_WRN("Failed to set PA sync");
+		}
 		break;
 
 	default:

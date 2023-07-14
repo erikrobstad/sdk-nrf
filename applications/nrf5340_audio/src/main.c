@@ -7,8 +7,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/debug/stack.h>
 #include <zephyr/device.h>
-#include <string.h>
-
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/zbus/zbus.h>
 
@@ -21,17 +19,11 @@
 #include "sd_card.h"
 #include "bt_mgmt.h"
 #include "board_version.h"
-#include "audio_system.h"
 #include "channel_assignment.h"
 #include "streamctrl.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(main, CONFIG_MAIN_LOG_LEVEL);
-
-#if defined(CONFIG_INIT_STACKS)
-/* Used for printing stack usage */
-extern struct k_thread z_main_thread;
-#endif /* defined(CONFIG_INIT_STACKS) */
 
 static struct board_version board_rev;
 

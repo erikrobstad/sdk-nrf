@@ -15,7 +15,7 @@
 
 extern const nrfx_timer_t audio_sync_timer_instance;
 
-/***** Messages for ZBus ******/
+/***** Messages for zbus ******/
 
 enum button_action {
 	BUTTON_PRESS = 1,
@@ -32,7 +32,7 @@ enum le_audio_evt_type {
 	LE_AUDIO_EVT_PRES_DELAY_SET,
 	LE_AUDIO_EVT_STREAMING,
 	LE_AUDIO_EVT_NOT_STREAMING,
-	LE_AUDIO_EVT_SYNC_LOST,
+	LE_AUDIO_EVT_PA_SYNC_LOST,
 	LE_AUDIO_EVT_NUM_EVTS
 };
 

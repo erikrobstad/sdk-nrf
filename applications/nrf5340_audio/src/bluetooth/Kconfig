@@ -479,6 +479,8 @@ config BT_AUDIO_VOL_STEP_SIZE
 	default 16
 
 endmenu # Volume control service
+
+#----------------------------------------------------------------------------#
 menu "QoS"
 
 config BT_AUDIO_PRESENTATION_DELAY_US
@@ -565,7 +567,7 @@ module-str = ble
 source "subsys/logging/Kconfig.template.log_config"
 
 module = BT_MGMT
-module-str = bt_mgmt
+module-str = bt-mgmt
 source "subsys/logging/Kconfig.template.log_config"
 
 module = BT_CONTENT_CONTROL
@@ -577,11 +579,11 @@ module-str = bt_media_control
 source "subsys/logging/Kconfig.template.log_config"
 
 module = BT_RENDERER
-module-str = bt_renderer
+module-str = bt-renderer
 source "subsys/logging/Kconfig.template.log_config"
 
 module = BT_VOLUME
-module-str = bt_volume
+module-str = bt-volume
 source "subsys/logging/Kconfig.template.log_config"
 
 module = BT_CTLR_CFG

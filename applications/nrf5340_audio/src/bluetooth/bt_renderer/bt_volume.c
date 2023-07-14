@@ -6,7 +6,6 @@
 
 #include "bt_volume.h"
 
-#include <stdint.h>
 #include <zephyr/kernel.h>
 #include <zephyr/types.h>
 #include <zephyr/bluetooth/conn.h>
@@ -74,7 +73,7 @@ static bool vcs_client_peer_exists(struct bt_conn *conn)
 /**
  * @brief  Callback handler for volume state changed.
  *
- *         This callback handler will be triggered if
+ * @note   This callback handler will be triggered if
  *         volume state changed, or muted/unmuted.
  */
 static void vcs_state_ctlr_cb_handler(struct bt_vcp_vol_ctlr *vcs, int err, uint8_t volume,
@@ -107,7 +106,7 @@ static void vcs_state_ctlr_cb_handler(struct bt_vcp_vol_ctlr *vcs, int err, uint
 /**
  * @brief  Callback handler for VCS controller flags changed.
  *
- *         This callback handler will be triggered if
+ * @note   This callback handler will be triggered if
  *         VCS flags changed.
  */
 static void vcs_flags_ctlr_cb_handler(struct bt_vcp_vol_ctlr *vcs, int err, uint8_t flags)
@@ -122,7 +121,7 @@ static void vcs_flags_ctlr_cb_handler(struct bt_vcp_vol_ctlr *vcs, int err, uint
 /**
  * @brief  Callback handler for volume state changed.
  *
- *         This callback handler will be triggered if
+ * @note   This callback handler will be triggered if
  *         volume state changed, or muted/unmuted from the volume_controller.
  */
 static void vcs_state_rend_cb_handler(int err, uint8_t volume, uint8_t mute)
@@ -152,7 +151,7 @@ static void vcs_state_rend_cb_handler(int err, uint8_t volume, uint8_t mute)
 /**
  * @brief  Callback handler for VCS rendrer flags changed.
  *
- *         This callback handler will be triggered if
+ * @note   This callback handler will be triggered if
  *         VCS flags changed.
  */
 static void vcs_flags_rend_cb_handler(int err, uint8_t flags)
@@ -167,7 +166,7 @@ static void vcs_flags_rend_cb_handler(int err, uint8_t flags)
 /**
  * @brief  Callback handler for VCS discover finished
  *
- *         This callback handler will be triggered when VCS
+ * @note   This callback handler will be triggered when VCS
  *         discovery is finished.
  */
 static void vcs_discover_cb_handler(struct bt_vcp_vol_ctlr *vcs, int err, uint8_t vocs_count,
@@ -340,6 +339,7 @@ int bt_vol_vcs_ctlr_init(void)
 	vcs_client_callback.discover = vcs_discover_cb_handler;
 	vcs_client_callback.state = vcs_state_ctlr_cb_handler;
 	vcs_client_callback.flags = vcs_flags_ctlr_cb_handler;
+
 	return bt_vcp_vol_ctlr_cb_register(&vcs_client_callback);
 }
 
