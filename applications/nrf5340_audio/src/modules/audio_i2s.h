@@ -31,8 +31,9 @@
  * Calculate the number of samples in a block, divided by the number of samples
  * that will fit within a 32-bit word
  */
+// ----------------- NB! Added a multiplication with the number 8 --------------------------
 #define I2S_SAMPLES_NUM                                                                            \
-	(BLOCK_SIZE_BYTES / (CONFIG_AUDIO_BIT_DEPTH_OCTETS) / (32 / CONFIG_AUDIO_BIT_DEPTH_BITS))
+	(8*BLOCK_SIZE_BYTES / (CONFIG_AUDIO_BIT_DEPTH_OCTETS) / (32 / CONFIG_AUDIO_BIT_DEPTH_BITS))
 
 /**
  * @brief I2S block complete event callback type

@@ -24,6 +24,7 @@
 #include "contin_array.h"
 #include "pcm_mix.h"
 #include "streamctrl.h"
+#include "audio_lc3.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(audio_datapath, CONFIG_AUDIO_DATAPATH_LOG_LEVEL);
@@ -430,6 +431,8 @@ static void audio_datapath_presentation_compensation(uint32_t recv_frame_ts_us, 
 	}
 }
 
+// -------------------------------------------- TODO: Merge the Marius functionality with the tone functionality?
+
 static void tone_stop_worker(struct k_work *work)
 {
 	tone_active = false;
@@ -654,6 +657,11 @@ static void audio_datapath_i2s_blk_complete(uint32_t frame_start_ts, uint32_t *r
 	}
 
 	ERR_CHK_MSG(ret, "RX failed to get block");
+
+
+	/*** Set LC3 data ***/
+
+	audio_lc3_buffers_set(uint8_t *tx_buf);
 
 	/*** Data exchange ***/
 	audio_i2s_set_next_buf(tx_buf, rx_buf);

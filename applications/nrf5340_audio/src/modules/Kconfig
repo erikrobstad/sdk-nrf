@@ -50,6 +50,17 @@ config I2S_CH_NUM
 endmenu # I2S
 
 #----------------------------------------------------------------------------#
+menu "Audio LC3"
+
+config AUDIO_LC3_ENABLE
+	bool
+	default n
+	help
+	 Enable playing encoded LC3 files from SD card
+
+endmenu # Audio LC3
+
+#----------------------------------------------------------------------------#
 menu "Log levels"
 
 module = MODULE_AUDIO_USB
@@ -78,6 +89,10 @@ source "subsys/logging/Kconfig.template.log_config"
 
 module = MODULE_SD_CARD
 module-str = module-sd-card
+source "subsys/logging/Kconfig.template.log_config"
+
+module = MODULE_AUDIO_LC3
+module-str = module-audio-lc3
 source "subsys/logging/Kconfig.template.log_config"
 
 endmenu # Log levels

@@ -89,7 +89,7 @@ static void audio_headset_configure(void)
 	sw_codec_cfg.decoder.enabled = true;
 }
 
-static void encoder_thread(void *arg1, void *arg2, void *arg3)
+static void encoder_thread(void *arg1, void *arg2, void *arg3) // ----- HERE
 {
 	int ret;
 	uint32_t blocks_alloced_num;
