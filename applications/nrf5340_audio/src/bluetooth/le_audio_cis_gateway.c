@@ -19,7 +19,6 @@
 
 #include "macros_common.h"
 #include "nrf5340_audio_common.h"
-#include "ble_audio_services.h"
 #include "channel_assignment.h"
 
 #include <zephyr/logging/log.h>
@@ -173,7 +172,7 @@ static int headset_pres_delay_find(uint8_t index, uint32_t *pres_dly_us)
 		if (IN_RANGE(CONFIG_BT_AUDIO_PRESENTATION_DELAY_US, pres_dly_min, pres_dly_max)) {
 			*pres_dly_us = CONFIG_BT_AUDIO_PRESENTATION_DELAY_US;
 		} else {
-			LOG_WRN("Preferred local presentaion delay outside of range");
+			LOG_WRN("Preferred local presentation delay outside of range");
 
 			if (pres_dly_max < CONFIG_BT_AUDIO_PRESENTATION_DELAY_US) {
 				*pres_dly_us = pres_dly_max;
@@ -189,7 +188,7 @@ static int headset_pres_delay_find(uint8_t index, uint32_t *pres_dly_us)
 		return 0;
 	}
 
-	LOG_ERR("Trying to use unrecognised search mode");
+	LOG_ERR("Trying to use unrecognized search mode");
 	return -EINVAL;
 }
 
@@ -224,7 +223,7 @@ static bool ep_state_check(struct bt_bap_ep *ep, enum bt_bap_ep_state state)
  * @param[in]  conn   The connection to search for
  * @param[out] index  The channel index
  *
- * @return 0 if succesfull, -EINVAL if there is no match
+ * @return 0 if successful, -EINVAL if there is no match
  */
 static int channel_index_get(const struct bt_conn *conn, uint8_t *index)
 {
@@ -657,7 +656,7 @@ static void work_stream_start(struct k_work *work)
 		}
 	} else if (ret != 0) {
 		LOG_ERR("Failed to establish CIS, ret = %d", ret);
-		/** Defining the connection as having nonvalid configs, since it is not possible to
+		/** Defining the connection as having invalid configs, since it is not possible to
 		 *  start stream
 		 */
 		nonvalid_configs_cb(headsets[work_data.channel_index].headset_conn);
@@ -1013,69 +1012,6 @@ static int discover_source(struct bt_conn *conn)
 }
 #endif /* (CONFIG_BT_AUDIO_RX) */
 
-#if (CONFIG_BT_MCS)
-/**
- * @brief	Callback handler for play/pause.
- *
- * @note	This callback is called from MCS after receiving a
- *		command from the client or the local media player.
- *
- * @param[in]	play  Boolean to indicate if the stream should be resumed or paused.
- */
-static void le_audio_play_pause_cb(bool play)
-{
-	int ret;
-
-	LOG_DBG("Play/pause cb, state: %d", play);
-
-	if (play) {
-		if (ep_state_check(headsets[AUDIO_CH_L].sink_stream.ep,
-				   BT_BAP_EP_STATE_QOS_CONFIGURED)) {
-			ret = bt_bap_stream_enable(&headsets[AUDIO_CH_L].sink_stream,
-						   lc3_preset_sink.codec.meta,
-						   lc3_preset_sink.codec.meta_count);
-
-			if (ret) {
-				LOG_WRN("Failed to enable left stream");
-			}
-		}
-
-		if (ep_state_check(headsets[AUDIO_CH_R].sink_stream.ep,
-				   BT_BAP_EP_STATE_QOS_CONFIGURED)) {
-			ret = bt_bap_stream_enable(&headsets[AUDIO_CH_R].sink_stream,
-						   lc3_preset_sink.codec.meta,
-						   lc3_preset_sink.codec.meta_count);
-
-			if (ret) {
-				LOG_WRN("Failed to enable right stream");
-			}
-		}
-	} else {
-		le_audio_event_publish(LE_AUDIO_EVT_NOT_STREAMING);
-
-		if (ep_state_check(headsets[AUDIO_CH_L].sink_stream.ep,
-				   BT_BAP_EP_STATE_STREAMING)) {
-			ret = bt_bap_stream_disable(&headsets[AUDIO_CH_L].sink_stream);
-
-			if (ret) {
-				LOG_WRN("Failed to disable left stream");
-			}
-		}
-
-		if (ep_state_check(headsets[AUDIO_CH_R].sink_stream.ep,
-				   BT_BAP_EP_STATE_STREAMING)) {
-			ret = bt_bap_stream_disable(&headsets[AUDIO_CH_R].sink_stream);
-
-			if (ret) {
-				LOG_WRN("Failed to disable right stream");
-			}
-		}
-	}
-
-	playing_state = play;
-}
-#endif /* CONFIG_BT_MCS */
-
 static int iso_stream_send(uint8_t const *const data, size_t size, struct le_audio_headset headset)
 {
 	int ret;
@@ -1141,7 +1077,7 @@ static int initialize(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestm
 	}
 
 	if (recv_cb == NULL) {
-		LOG_ERR("Receieve callback is NULL");
+		LOG_ERR("Receive callback is NULL");
 		return -EINVAL;
 	}
 
@@ -1221,14 +1157,6 @@ static int initialize(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestm
 		return ret;
 	}
 
-#if (CONFIG_BT_MCS)
-	ret = ble_mcs_server_init(le_audio_play_pause_cb);
-	if (ret) {
-		LOG_ERR("MCS server init failed");
-		return ret;
-	}
-#endif /* CONFIG_BT_MCS */
-
 	initialized = true;
 
 	return 0;
@@ -1238,7 +1166,8 @@ int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
 {
 	ARG_UNUSED(action);
 
-	return 0;
+	LOG_WRN("%s not supported", __func__);
+	return -ENOTSUP;
 }
 
 int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay)
@@ -1247,7 +1176,7 @@ int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pr
 	ARG_UNUSED(sampling_rate);
 	ARG_UNUSED(pres_delay);
 
-	LOG_WRN("Getting config from gateway is not yet supported");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -1278,7 +1207,7 @@ int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
 {
 	ARG_UNUSED(ext_adv);
 
-	LOG_WRN("No extended advertiser in CIS gateway");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -1288,7 +1217,7 @@ void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodi
 	ARG_UNUSED(adv_size);
 	ARG_UNUSED(periodic);
 
-	LOG_WRN("No advertiser in CIS gateway");
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
@@ -1296,23 +1225,72 @@ int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_
 	ARG_UNUSED(pa_sync);
 	ARG_UNUSED(broadcast_id);
 
-	LOG_WRN("Not used in CIS gateway");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
-int le_audio_play_pause(void)
+int le_audio_play(void)
 {
-	int ret;
+	int ret_left = 0;
+	int ret_right = 0;
 
-	if (IS_ENABLED(CONFIG_STREAM_BIDIRECTIONAL)) {
-		LOG_WRN("Play/pause not supported for bidirectional mode");
-	} else {
-		ret = ble_mcs_play_pause(NULL);
-		if (ret) {
-			LOG_WRN("Failed to change streaming state");
-			return ret;
+	if (ep_state_check(headsets[AUDIO_CH_L].sink_stream.ep, BT_BAP_EP_STATE_QOS_CONFIGURED)) {
+		ret_left = bt_bap_stream_enable(&headsets[AUDIO_CH_L].sink_stream,
+						lc3_preset_sink.codec.meta,
+						lc3_preset_sink.codec.meta_count);
+
+		if (ret_left) {
+			LOG_WRN("Failed to enable left stream: %d", ret_left);
 		}
 	}
+
+	if (ep_state_check(headsets[AUDIO_CH_R].sink_stream.ep, BT_BAP_EP_STATE_QOS_CONFIGURED)) {
+		ret_right = bt_bap_stream_enable(&headsets[AUDIO_CH_R].sink_stream,
+						 lc3_preset_sink.codec.meta,
+						 lc3_preset_sink.codec.meta_count);
+
+		if (ret_right) {
+			LOG_WRN("Failed to enable right stream: %d", ret_right);
+		}
+	}
+
+	if (ret_left || ret_right) {
+		return -EIO;
+	}
+
+	playing_state = true;
+
+	return 0;
+}
+
+int le_audio_pause(void)
+{
+	int ret_left = 0;
+	int ret_right = 0;
+
+	le_audio_event_publish(LE_AUDIO_EVT_NOT_STREAMING);
+
+	if (ep_state_check(headsets[AUDIO_CH_L].sink_stream.ep, BT_BAP_EP_STATE_STREAMING)) {
+		ret_left = bt_bap_stream_disable(&headsets[AUDIO_CH_L].sink_stream);
+
+		if (ret_left) {
+			LOG_WRN("Failed to disable left stream: %d", ret_left);
+		}
+	}
+
+	if (ep_state_check(headsets[AUDIO_CH_R].sink_stream.ep, BT_BAP_EP_STATE_STREAMING)) {
+		ret_right = bt_bap_stream_disable(&headsets[AUDIO_CH_R].sink_stream);
+
+		if (ret_right) {
+			LOG_WRN("Failed to disable right stream: %d", ret_right);
+		}
+	}
+
+	if (ret_left || ret_right) {
+		return -EIO;
+	}
+
+	playing_state = false;
 
 	return 0;
 }

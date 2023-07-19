@@ -323,6 +323,13 @@ config LE_AUDIO_MSG_SUB_THREAD_PRIO
 	  This is a preemptible thread.
 	  This thread will subscribe to LE Audio events from zbus.
 
+config CONTENT_CONTROL_MSG_SUB_THREAD_PRIO
+	int "Priority for content control message subscribe thread"
+	default 5
+	help
+	  This is a preemptible thread.
+	  This thread will subscribe to content control events from zbus.
+
 endmenu # Thread priorities
 
 #----------------------------------------------------------------------------#
@@ -346,6 +353,10 @@ config LE_AUDIO_MSG_SUB_STACK_SIZE
 	int "Stack size for LE Audio message subscribe thread"
 	default 1024
 
+config CONTENT_CONTROL_MSG_SUB_STACK_SIZE
+	int "Stack size for content control message subscribe thread"
+	default 1024
+
 endmenu # Stack sizes
 
 #----------------------------------------------------------------------------#
@@ -357,6 +368,10 @@ config BUTTON_MSG_SUB_QUEUE_SIZE
 
 config LE_AUDIO_MSG_SUB_QUEUE_SIZE
 	int "Queue size for LE Audio message subscriber"
+	default 4
+
+config CONTENT_CONTROL_MSG_SUB_QUEUE_SIZE
+	int "Queue size for content control message subscriber"
 	default 4
 
 endmenu # Zbus

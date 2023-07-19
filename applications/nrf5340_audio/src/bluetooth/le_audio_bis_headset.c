@@ -511,7 +511,7 @@ void le_audio_conn_set(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	LOG_WRN("No conn used in BIS");
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
@@ -550,14 +550,14 @@ void le_audio_conn_disconnected(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	LOG_WRN("No conn used in BIS");
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
 {
 	ARG_UNUSED(ext_adv);
 
-	LOG_WRN("No extended advertiser in BIS headset");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -567,16 +567,27 @@ void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodi
 	ARG_UNUSED(adv_size);
 	ARG_UNUSED(periodic);
 
-	LOG_WRN("No advertiser in BIS headset");
+	LOG_WRN("%s not supported", __func__);
 }
 
-int le_audio_play_pause(void)
+int le_audio_play(void)
+{
+	if (!paused) {
+		LOG_WRN("Already playing");
+		return -EALREADY;
+	}
+
+	paused = false;
+	return 0;
+}
+
+int le_audio_pause(void)
 {
 	int ret;
 
 	if (paused) {
-		paused = false;
-		return 0;
+		LOG_WRN("Already paused");
+		return -EALREADY;
 	}
 
 	if (active_stream.stream == NULL || active_stream.stream->ep == NULL) {
@@ -593,6 +604,7 @@ int le_audio_play_pause(void)
 		}
 	} else {
 		LOG_WRN("Current stream not in streaming state");
+		return -EALREADY;
 	}
 
 	return 0;

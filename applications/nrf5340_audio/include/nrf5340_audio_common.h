@@ -18,7 +18,7 @@ extern const nrfx_timer_t audio_sync_timer_instance;
 /***** Messages for ZBus ******/
 
 enum button_action {
-	BUTTON_PRESS,
+	BUTTON_PRESS = 1,
 	BUTTON_ACTION_NUM,
 };
 
@@ -28,8 +28,7 @@ struct button_msg {
 };
 
 enum le_audio_evt_type {
-	LE_AUDIO_EVT_INVALID,
-	LE_AUDIO_EVT_CONFIG_RECEIVED,
+	LE_AUDIO_EVT_CONFIG_RECEIVED = 1,
 	LE_AUDIO_EVT_PRES_DELAY_SET,
 	LE_AUDIO_EVT_STREAMING,
 	LE_AUDIO_EVT_NOT_STREAMING,
@@ -42,8 +41,7 @@ struct le_audio_msg {
 };
 
 enum bt_mgmt_evt_type {
-	BT_MGMT_INVALID,
-	BT_MGMT_CONNECTED,
+	BT_MGMT_CONNECTED = 1,
 	BT_MGMT_DISCONNECTED,
 	BT_MGMT_SECURITY_CHANGED,
 	BT_MGMT_EXT_ADV_READY,
@@ -59,8 +57,7 @@ struct bt_mgmt_msg {
 };
 
 enum volume_evt_type {
-	VOLUME_INVALID,
-	VOLUME_UP,
+	VOLUME_UP = 1,
 	VOLUME_DOWN,
 	VOLUME_SET,
 	VOLUME_MUTE,
@@ -70,6 +67,15 @@ enum volume_evt_type {
 struct volume_msg {
 	enum volume_evt_type event;
 	uint8_t volume;
+};
+
+enum content_control_evt_type {
+	MEDIA_PLAY = 1,
+	MEDIA_PAUSE,
+};
+
+struct content_control_msg {
+	enum content_control_evt_type event;
 };
 
 #endif /* _NRF5340_AUDIO_COMMON_H_ */

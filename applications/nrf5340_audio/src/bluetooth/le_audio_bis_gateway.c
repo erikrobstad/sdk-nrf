@@ -286,7 +286,8 @@ int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
 {
 	ARG_UNUSED(action);
 
-	return 0;
+	LOG_WRN("%s not supported", __func__);
+	return -ENOTSUP;
 }
 
 int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay)
@@ -295,7 +296,7 @@ int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pr
 	ARG_UNUSED(sampling_rate);
 	ARG_UNUSED(pres_delay);
 
-	LOG_WRN("Getting config from gateway is not yet supported");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -303,7 +304,7 @@ void le_audio_conn_set(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	LOG_WRN("No conn used in BIS");
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
@@ -311,7 +312,7 @@ int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_
 	ARG_UNUSED(pa_sync);
 	ARG_UNUSED(broadcast_id);
 
-	LOG_WRN("Not used in BIS gateway");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -319,7 +320,7 @@ void le_audio_conn_disconnected(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	LOG_WRN("No conn used in BIS");
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
@@ -349,7 +350,33 @@ void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodi
 	}
 }
 
-int le_audio_play_pause(void)
+int le_audio_play(void)
+{
+	int ret;
+
+	/* All streams in a broadcast source is in the same state,
+	 * so we can just check the first stream
+	 */
+	if (audio_streams[0].ep == NULL) {
+		LOG_ERR("stream->ep is NULL");
+		return -ECANCELED;
+	}
+
+	if (audio_streams[0].ep->status.state == BT_BAP_EP_STATE_STREAMING) {
+		LOG_WRN("Already streaming");
+		return -EALREADY;
+	}
+
+	ret = bt_bap_broadcast_source_start(broadcast_source, adv);
+	if (ret) {
+		LOG_WRN("Failed to start broadcast, ret: %d", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+int le_audio_pause(void)
 {
 	int ret;
 
@@ -365,15 +392,14 @@ int le_audio_play_pause(void)
 		ret = bt_bap_broadcast_source_stop(broadcast_source);
 		if (ret) {
 			LOG_WRN("Failed to stop broadcast, ret: %d", ret);
+			return ret;
 		}
 	} else {
-		ret = bt_bap_broadcast_source_start(broadcast_source, adv);
-		if (ret) {
-			LOG_WRN("Failed to start broadcast, ret: %d", ret);
-		}
+		LOG_WRN("Not in a streaming state");
+		return -EINVAL;
 	}
 
-	return ret;
+	return 0;
 }
 
 int le_audio_send(struct encoded_audio enc_audio)

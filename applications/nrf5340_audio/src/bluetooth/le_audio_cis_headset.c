@@ -19,7 +19,6 @@
 
 #include "macros_common.h"
 #include "nrf5340_audio_common.h"
-#include "ble_audio_services.h"
 #include "channel_assignment.h"
 
 #include <zephyr/logging/log.h>
@@ -139,7 +138,6 @@ static struct bt_pacs_cap caps[] = {
 };
 /* clang-format on */
 
-static struct bt_conn *default_conn;
 static struct bt_bap_stream
 	audio_streams[CONFIG_BT_ASCS_ASE_SNK_COUNT + CONFIG_BT_ASCS_ASE_SRC_COUNT];
 
@@ -190,9 +188,7 @@ static int lc3_config_cb(struct bt_conn *conn, const struct bt_bap_ep *ep, enum 
 			 const struct bt_codec *codec, struct bt_bap_stream **stream,
 			 struct bt_codec_qos_pref *const pref, struct bt_bap_ascs_rsp *rsp)
 {
-	int ret;
-
-	LOG_DBG("LC3 configure call-back");
+	LOG_DBG("LC3 config callback");
 
 	for (int i = 0; i < ARRAY_SIZE(audio_streams); i++) {
 		struct bt_bap_stream *audio_stream = &audio_streams[i];
@@ -232,16 +228,6 @@ static int lc3_config_cb(struct bt_conn *conn, const struct bt_bap_ep *ep, enum 
 
 			*stream = audio_stream;
 			*pref = qos_pref;
-
-			/* MCS discover needs to be done once per connection */
-			if (IS_ENABLED(CONFIG_BT_MCC)) {
-				ret = ble_mcs_discover(conn);
-				if (ret == -EALREADY) {
-					LOG_DBG("Discovery already run or in progress");
-				} else if (ret) {
-					LOG_ERR("Failed to start discovery of MCS: %d", ret);
-				}
-			}
 
 			return 0;
 		}
@@ -417,7 +403,7 @@ static int initialize(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestm
 	}
 
 	if (recv_cb == NULL) {
-		LOG_ERR("Receieve callback is NULL");
+		LOG_ERR("Receive callback is NULL");
 		return -EINVAL;
 	}
 
@@ -430,14 +416,6 @@ static int initialize(le_audio_receive_cb recv_cb, le_audio_timestamp_cb timestm
 	timestamp_cb = timestmp_cb;
 
 	bt_bap_unicast_server_register_cb(&unicast_server_cb);
-
-	if (IS_ENABLED(CONFIG_BT_MCC)) {
-		ret = ble_mcs_client_init();
-		if (ret) {
-			LOG_ERR("MCS client init failed");
-			return ret;
-		}
-	}
 
 	channel_assignment_get(&channel);
 
@@ -570,7 +548,8 @@ int le_audio_user_defined_button_press(enum le_audio_user_defined_action action)
 {
 	ARG_UNUSED(action);
 
-	return 0;
+	LOG_WRN("%s not supported", __func__);
+	return -ENOTSUP;
 }
 
 int le_audio_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32_t *pres_delay)
@@ -613,7 +592,7 @@ void le_audio_conn_set(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	default_conn = conn;
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_id)
@@ -621,7 +600,7 @@ int le_audio_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broadcast_
 	ARG_UNUSED(pa_sync);
 	ARG_UNUSED(broadcast_id);
 
-	LOG_WRN("Not used in CIS headset");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -629,14 +608,14 @@ void le_audio_conn_disconnected(struct bt_conn *conn)
 {
 	ARG_UNUSED(conn);
 
-	LOG_DBG("Not used");
+	LOG_WRN("%s not supported", __func__);
 }
 
 int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv)
 {
 	ARG_UNUSED(ext_adv);
 
-	LOG_DBG("No need for ext_adv in CIS headset");
+	LOG_WRN("%s not supported", __func__);
 	return -ENOTSUP;
 }
 
@@ -648,21 +627,16 @@ void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodi
 	*adv_size = ARRAY_SIZE(ad_peer);
 }
 
-int le_audio_play_pause(void)
+int le_audio_play(void)
 {
-	int ret;
+	LOG_WRN("%s not supported", __func__);
+	return -ENOTSUP;
+}
 
-	if (IS_ENABLED(CONFIG_STREAM_BIDIRECTIONAL)) {
-		LOG_WRN("Play/pause not supported for bidirectional mode");
-	} else {
-		ret = ble_mcs_play_pause(default_conn);
-		if (ret) {
-			LOG_WRN("Failed to change streaming state");
-			return ret;
-		}
-	}
-
-	return 0;
+int le_audio_pause(void)
+{
+	LOG_WRN("%s not supported", __func__);
+	return -ENOTSUP;
 }
 
 int le_audio_send(struct encoded_audio enc_audio)

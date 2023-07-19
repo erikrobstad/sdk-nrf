@@ -568,8 +568,12 @@ module = BT_MGMT
 module-str = bt_mgmt
 source "subsys/logging/Kconfig.template.log_config"
 
-module = AUDIO_SERVICES
-module-str = audio-services
+module = BT_CONTENT_CONTROL
+module-str = bt_content_control
+source "subsys/logging/Kconfig.template.log_config"
+
+module = BT_MEDIA_CONTROL
+module-str = bt_media_control
 source "subsys/logging/Kconfig.template.log_config"
 
 module = BT_RENDERER

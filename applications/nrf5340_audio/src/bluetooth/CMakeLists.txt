@@ -7,16 +7,16 @@
 add_subdirectory(bt_ctlr)
 add_subdirectory(bt_management)
 add_subdirectory(bt_renderer)
+add_subdirectory(bt_content_control)
 
 zephyr_library_include_directories(
     bt_ctlr
     bt_management
     bt_renderer
+    bt_content_control
 )
 
 if (CONFIG_TRANSPORT_CIS)
-	target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ble_audio_services.c)
-
 	# HEADSET
 	if (CONFIG_AUDIO_DEV EQUAL 1)
 		target_sources(app PRIVATE

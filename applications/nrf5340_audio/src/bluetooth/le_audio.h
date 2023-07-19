@@ -221,12 +221,18 @@ int le_audio_ext_adv_set(struct bt_le_ext_adv *ext_adv);
 void le_audio_adv_get(const struct bt_data **adv, size_t *adv_size, bool periodic);
 
 /**
- * @brief	Either resume or pause the Bluetooth LE Audio stream,
- *		depending on the current state of the stream
+ * @brief	Resume the Bluetooth LE Audio stream
  *
  * @return	0 for success, error otherwise
  */
-int le_audio_play_pause(void);
+int le_audio_play(void);
+
+/**
+ * @brief	Pause the Bluetooth LE Audio stream
+ *
+ * @return	0 for success, error otherwise
+ */
+int le_audio_pause(void);
 
 /**
  * @brief	Send Bluetooth LE Audio data
