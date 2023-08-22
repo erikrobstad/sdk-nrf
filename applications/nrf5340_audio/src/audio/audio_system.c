@@ -303,11 +303,10 @@ void audio_system_start(void)
 	sw_codec_cfg.initialized = true;
 
 	if (sw_codec_cfg.encoder.enabled && encoder_thread_id == NULL) {
-		encoder_thread_id =
-			k_thread_create(&encoder_thread_data, encoder_thread_stack,
-					CONFIG_ENCODER_STACK_SIZE, (k_thread_entry_t)encoder_thread,
-					NULL, NULL, NULL,
-					K_PRIO_PREEMPT(CONFIG_ENCODER_THREAD_PRIO), 0, K_NO_WAIT);
+		encoder_thread_id = k_thread_create(
+			&encoder_thread_data, encoder_thread_stack, CONFIG_ENCODER_STACK_SIZE,
+			(k_thread_entry_t)encoder_thread, NULL, NULL, NULL,
+			K_PRIO_PREEMPT(CONFIG_ENCODER_THREAD_PRIO), 0, K_NO_WAIT);
 		ret = k_thread_name_set(encoder_thread_id, "ENCODER");
 		ERR_CHK(ret);
 	}
@@ -371,19 +370,30 @@ int audio_system_fifo_rx_block_drop(void)
 	return 0;
 }
 
-void audio_system_init(void)
+int audio_system_init(void)
 {
 	int ret;
 
 #if ((CONFIG_AUDIO_DEV == GATEWAY) && (CONFIG_AUDIO_SOURCE_USB))
 	ret = audio_usb_init();
-	ERR_CHK(ret);
+	if (ret) {
+		LOG_ERR("Failed to initialize USB: %d", ret);
+		return ret;
+	}
 #else
 	ret = audio_datapath_init();
-	ERR_CHK(ret);
+	if (ret) {
+		LOG_ERR("Failed to initialize audio datapath: %d", ret);
+		return ret;
+	}
+
 	ret = hw_codec_init();
-	ERR_CHK(ret);
+	if (ret) {
+		LOG_ERR("Failed to initialize HW codec: %d", ret);
+		return ret;
+	}
 #endif
+	return 0;
 }
 
 static int cmd_audio_system_start(const struct shell *shell, size_t argc, const char **argv)
