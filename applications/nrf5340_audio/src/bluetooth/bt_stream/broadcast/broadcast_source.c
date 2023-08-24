@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#include "broadcast_internal.h"
+#include "broadcast_source_internal.h"
 
 #include <zephyr/zbus/zbus.h>
 #include <zephyr/bluetooth/bluetooth.h>
@@ -525,7 +525,7 @@ int broadcast_source_enable(void)
 
 	initialized = true;
 
-	LOG_DBG("LE Audio enabled");
+	LOG_DBG("Broadcast source enabled");
 
 	return 0;
 }
@@ -553,7 +553,7 @@ int broadcast_source_disable(void)
 
 	initialized = false;
 
-	LOG_DBG("LE Audio disabled");
+	LOG_DBG("Broadcast source disabled");
 
 	return 0;
 }

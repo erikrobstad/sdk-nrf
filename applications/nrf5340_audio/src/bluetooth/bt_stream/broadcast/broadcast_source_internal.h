@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef _BROADCAST_INTERNAL_H_
-#define _BROADCAST_INTERNAL_H_
+#ifndef _BROADCAST_SOURCE_INTERNAL_H_
+#define _BROADCAST_SOURCE_INTERNAL_H_
 
 #include "le_audio.h"
 
@@ -94,4 +94,4 @@ int broadcast_source_enable(void);
  */
 int broadcast_source_disable(void);
 
-#endif /* _BROADCAST_INTERNAL_H_ */
+#endif /* _BROADCAST_SOURCE_INTERNAL_H_ */

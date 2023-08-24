@@ -13,7 +13,7 @@
 #include "bt_mgmt.h"
 #include "bt_rend.h"
 #include "bt_content_ctrl.h"
-#include "broadcast_internal.h"
+#include "broadcast_source_internal.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(le_audio, CONFIG_BLE_LOG_LEVEL);
@@ -37,7 +37,7 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 	switch (event) {
 	case BT_MGMT_EXT_ADV_READY:
 		LOG_INF("Ext adv ready");
-		if (IS_ENABLED(CONFIG_TRANSPORT_BIS)) {
+		if (IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SOURCE)) {
 			ret = broadcast_source_start(msg->ext_adv);
 			if (ret) {
 				LOG_ERR("Failed to start broadcaster: %d", ret);
@@ -107,6 +107,10 @@ int le_audio_stop(enum audio_roles role)
 	int ret;
 
 	if (role == BROADCAST_SOURCE) {
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SOURCE)) {
+			return -ENOTSUP;
+		}
+
 		ret = broadcast_source_stop();
 		if (ret) {
 			LOG_WRN("Failed to stop broadcaster: %d", ret);
@@ -122,6 +126,10 @@ int le_audio_start(enum audio_roles role)
 	int ret;
 
 	if (role == BROADCAST_SOURCE) {
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SOURCE)) {
+			return -ENOTSUP;
+		}
+
 		ret = broadcast_source_start(NULL);
 		if (ret) {
 			LOG_WRN("Failed to start broadcaster: %d", ret);
@@ -137,6 +145,9 @@ int le_audio_send(struct encoded_audio enc_audio, enum audio_roles role)
 	int ret;
 
 	if (role & BROADCAST_SOURCE) {
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SOURCE)) {
+			return -ENOTSUP;
+		}
 
 		ret = broadcast_source_send(enc_audio);
 		if (ret) {
@@ -173,6 +184,10 @@ int le_audio_enable(enum le_audio_device_type type, le_audio_receive_cb recv_cb)
 
 	case LE_AUDIO_BROADCASTER:
 		ARG_UNUSED(recv_cb);
+
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SOURCE)) {
+			return -ENOTSUP;
+		}
 
 		size_t ext_adv_size = 0;
 		size_t per_adv_size = 0;
@@ -234,6 +249,10 @@ int le_audio_disable(void)
 		return -ENOTSUP;
 
 	case LE_AUDIO_BROADCASTER:
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SOURCE)) {
+			return -ENOTSUP;
+		}
+
 		ret = broadcast_source_disable();
 		if (ret) {
 			LOG_ERR("Failed to disable broadcaster");

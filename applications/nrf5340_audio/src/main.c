@@ -34,14 +34,18 @@ ZBUS_CHAN_DECLARE(le_audio_chan);
 ZBUS_CHAN_DECLARE(bt_mgmt_chan);
 ZBUS_CHAN_DECLARE(volume_chan);
 ZBUS_CHAN_DECLARE(cont_media_chan);
+#if defined(CONFIG_BT_BAP_BROADCAST_SOURCE)
 ZBUS_CHAN_DECLARE(sdu_ref_chan);
+#endif /* defined(CONFIG_BT_BAP_BROADCAST_SOURCE) */
 
 ZBUS_OBS_DECLARE(button_evt_sub);
 ZBUS_OBS_DECLARE(le_audio_evt_sub);
 ZBUS_OBS_DECLARE(bt_mgmt_evt_listen);
 ZBUS_OBS_DECLARE(volume_evt_sub);
 ZBUS_OBS_DECLARE(content_control_evt_sub);
+#if defined(CONFIG_BT_BAP_BROADCAST_SOURCE)
 ZBUS_OBS_DECLARE(sdu_ref_msg_listen);
+#endif /* defined(CONFIG_BT_BAP_BROADCAST_SOURCE) */
 
 static int hfclock_config_and_start(void)
 {
@@ -98,13 +102,14 @@ static int zbus_init(void)
 			LOG_ERR("Failed to add content control sub");
 			return ret;
 		}
-
+#if defined(CONFIG_BT_BAP_BROADCAST_SOURCE)
 		ret = zbus_chan_add_obs(&sdu_ref_chan, &sdu_ref_msg_listen,
 					ZBUS_ADD_OBS_TIMEOUT_MS);
 		if (ret) {
 			LOG_ERR("Failed to add timestamp listener");
 			return ret;
 		}
+#endif /* defined(CONFIG_BT_BAP_BROADCAST_SOURCE) */
 	}
 
 	return 0;
