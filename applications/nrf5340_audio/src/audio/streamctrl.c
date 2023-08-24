@@ -29,6 +29,7 @@
 #include "bt_rend.h"
 #include "bt_content_ctrl.h"
 #include "audio_datapath.h"
+#include "broadcast_sink_internal.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(streamctrl, CONFIG_STREAMCTRL_LOG_LEVEL);
@@ -336,11 +337,13 @@ static void button_msg_sub_thread(void)
 				break;
 			}
 
-			/* ret = le_audio_user_defined_button_press(LE_AUDIO_USER_DEFINED_ACTION_1);
-			 * if (ret) {
-			 *	LOG_WRN("Failed button 4 press, ret: %d", ret);
-			 * }
-			 */
+			if (IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SINK)) {
+				/* TODO: The _internal .h file is used, must be improved */
+				ret = broadcast_sink_change_active_audio_stream();
+				if (ret) {
+					LOG_WRN("Failed to change active audio stream: %d", ret);
+				}
+			}
 
 			break;
 
@@ -633,9 +636,14 @@ int streamctrl_start(void)
 	ret = bt_content_ctrl_init();
 	ERR_CHK(ret);
 
+#if (CONFIG_AUDIO_DEV == HEADSET)
+	ret = le_audio_enable(LE_AUDIO_RECEIVER, le_audio_rx_data_handler);
+#elif (CONFIG_AUDIO_DEV == GATEWAY)
 	ARG_UNUSED(le_audio_rx_data_handler);
-
 	ret = le_audio_enable(LE_AUDIO_BROADCASTER, NULL);
+#else
+	#error The device must be either headset or gateway
+#endif /* (CONFIG_AUDIO_DEV == HEADSET) */
 	ERR_CHK_MSG(ret, "Failed to enable LE Audio");
 
 	started = true;

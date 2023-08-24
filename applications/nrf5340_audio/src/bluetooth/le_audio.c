@@ -14,6 +14,7 @@
 #include "bt_rend.h"
 #include "bt_content_ctrl.h"
 #include "broadcast_source_internal.h"
+#include "broadcast_sink_internal.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(le_audio, CONFIG_BLE_LOG_LEVEL);
@@ -74,11 +75,12 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 
 	case BT_MGMT_PA_SYNC_OBJECT_READY:
 		LOG_INF("PA sync object ready");
-		/* ret = le_audio_pa_sync_set(msg->pa_sync, msg->broadcast_id);
-		 * if (ret) {
-		 *	LOG_WRN("Failed to set PA sync");
-		 * }
-		 */
+		if (IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SINK)) {
+			ret = broadcast_sink_pa_sync_set(msg->pa_sync, msg->broadcast_id);
+			if (ret) {
+				LOG_WRN("Failed to set PA sync");
+			}
+		}
 
 		break;
 
@@ -167,8 +169,24 @@ int le_audio_enable(enum le_audio_device_type type, le_audio_receive_cb recv_cb)
 
 	switch (device_type) {
 	case LE_AUDIO_RECEIVER:
-		LOG_ERR("Not yet supported");
-		return -ENOTSUP;
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SINK)) {
+			return -ENOTSUP;
+		}
+
+		ret = broadcast_sink_enable(recv_cb);
+		if (ret) {
+			LOG_WRN("Failed to enable broadcaster");
+			return ret;
+		}
+
+		ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST,
+					 CONFIG_BT_AUDIO_BROADCAST_NAME);
+		if (ret) {
+			LOG_WRN("Failed to start scanning");
+			return ret;
+		}
+
+		break;
 
 	case LE_AUDIO_HEADSET:
 		LOG_ERR("Not yet supported");
@@ -233,8 +251,15 @@ int le_audio_disable(void)
 
 	switch (device_type) {
 	case LE_AUDIO_RECEIVER:
-		LOG_ERR("Not yet supported");
-		return -ENOTSUP;
+		if (!IS_ENABLED(CONFIG_BT_BAP_BROADCAST_SINK)) {
+			return -ENOTSUP;
+		}
+
+		ret = broadcast_sink_disable();
+		if (ret) {
+			LOG_ERR("Failed to broadcast sink");
+			return ret;
+		}
 
 	case LE_AUDIO_HEADSET:
 		LOG_ERR("Not yet supported");
@@ -256,9 +281,9 @@ int le_audio_disable(void)
 		ret = broadcast_source_disable();
 		if (ret) {
 			LOG_ERR("Failed to disable broadcaster");
+			return ret;
 		}
 
-		break;
 	case LE_AUDIO_GATEWAY:
 		LOG_ERR("Not yet supported");
 		return -ENOTSUP;
