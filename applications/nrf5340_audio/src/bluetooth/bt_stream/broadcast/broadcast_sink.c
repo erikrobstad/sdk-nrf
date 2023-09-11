@@ -68,6 +68,8 @@ static le_audio_receive_cb receive_cb;
 static bool init_routine_completed;
 static bool paused;
 
+static uint32_t pres_dly_test;
+
 static int bis_headset_cleanup(void);
 
 static void le_audio_event_publish(enum le_audio_evt_type event)
@@ -256,6 +258,10 @@ static void base_recv_cb(struct bt_bap_broadcast_sink *sink, const struct bt_bap
 			if (bitrate_check((struct bt_codec *)&base->subgroups[i].codec)) {
 				suitable_stream_found = true;
 
+				pres_dly_test = base->pd;
+
+				LOG_ERR("base-pd: %d", pres_dly_test);
+
 				bis_index_bitfields[sync_stream_cnt] = BIT(index);
 
 				/* Get general (level 2) codec config from the subgroup */
@@ -308,7 +314,7 @@ static void syncable_cb(struct bt_bap_broadcast_sink *sink, bool encrypted)
 	static uint8_t bis_encryption_key[BT_ISO_BROADCAST_CODE_SIZE] = {0};
 	struct bt_bap_stream *audio_streams_p[] = {&audio_streams[active_stream_index]};
 
-	LOG_DBG("Broadcast sink is syncable");
+	LOG_INF("Broadcast sink is syncable");
 
 	if (IS_ENABLED(CONFIG_BT_AUDIO_BROADCAST_ENCRYPTED)) {
 		memcpy(bis_encryption_key, CONFIG_BT_AUDIO_BROADCAST_ENCRYPTION_KEY,
@@ -488,7 +494,9 @@ int broadcast_sink_config_get(uint32_t *bitrate, uint32_t *sampling_rate, uint32
 			return -ENXIO;
 		}
 
-		*pres_delay = active_stream.stream->qos->pd;
+		LOG_WRN("PRES DLY: %d", active_stream.stream->qos->pd);
+
+		*pres_delay = pres_dly_test;
 	}
 
 	return 0;

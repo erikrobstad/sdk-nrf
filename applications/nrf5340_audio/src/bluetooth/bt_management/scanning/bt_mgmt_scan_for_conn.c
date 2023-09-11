@@ -50,6 +50,12 @@ static void bond_connect(const struct bt_bond_info *info, void *user_data)
 			LOG_WRN("Stop scan failed: %d", ret);
 		}
 
+		char addr_buf[BT_ADDR_LE_STR_LEN];
+
+		bt_addr_le_to_str(adv_addr, addr_buf, BT_ADDR_LE_STR_LEN);
+
+		LOG_INF("BONDED: Creating conn to: %s", addr_buf);
+
 		ret = bt_conn_le_create(adv_addr, BT_CONN_LE_CREATE_CONN, CONNECTION_PARAMETERS,
 					&conn);
 		if (ret) {
@@ -78,6 +84,12 @@ static bool device_name_check(struct bt_data *data, void *user_data)
 	bt_addr_le_t *addr = user_data;
 	struct bt_conn *conn;
 
+	static bool conn_created;
+
+	if (conn_created) {
+		return false;
+	}
+
 	/* We only care about LTVs with name */
 	if (data->type == BT_DATA_NAME_COMPLETE) {
 		size_t srch_name_size = strlen(srch_name);
@@ -94,6 +106,12 @@ static bool device_name_check(struct bt_data *data, void *user_data)
 				LOG_ERR("Stop scan failed: %d", ret);
 			}
 
+			char addr_buf[BT_ADDR_LE_STR_LEN];
+
+			bt_addr_le_to_str(addr, addr_buf, BT_ADDR_LE_STR_LEN);
+
+			LOG_INF("NOT BONDED: Creating conn to: %s", addr_buf);
+
 			ret = bt_conn_le_create(addr, BT_CONN_LE_CREATE_CONN, CONNECTION_PARAMETERS,
 						&conn);
 			if (ret) {
@@ -104,6 +122,9 @@ static bool device_name_check(struct bt_data *data, void *user_data)
 					LOG_ERR("Failed to restart scanning: %d", ret);
 				}
 			}
+
+			LOG_WRN("Connection created, will not connect to any more devices");
+			conn_created = true;
 
 			return false;
 		}

@@ -73,34 +73,34 @@ static void bond_find(const struct bt_bond_info *info, void *user_data)
 	}
 }
 
-static int direct_adv_create(bt_addr_le_t addr)
-{
-	int ret;
-	struct bt_le_adv_param adv_param;
-	char addr_buf[BT_ADDR_LE_STR_LEN];
+// static int direct_adv_create(bt_addr_le_t addr)
+// {
+// 	int ret;
+// 	struct bt_le_adv_param adv_param;
+// 	char addr_buf[BT_ADDR_LE_STR_LEN];
 
-	adv_param = *BT_LE_ADV_CONN_DIR_LOW_DUTY(&addr);
-	adv_param.id = BT_ID_DEFAULT;
-	adv_param.options |= BT_LE_ADV_OPT_DIR_ADDR_RPA;
+// 	adv_param = *BT_LE_ADV_CONN_DIR_LOW_DUTY(&addr);
+// 	adv_param.id = BT_ID_DEFAULT;
+// 	adv_param.options |= BT_LE_ADV_OPT_DIR_ADDR_RPA;
 
-	/* Clear ADV data set before update to direct advertising */
-	ret = bt_le_ext_adv_set_data(ext_adv, NULL, 0, NULL, 0);
-	if (ret) {
-		LOG_ERR("Failed to clear advertising data. Err: %d", ret);
-		return ret;
-	}
+// 	/* Clear ADV data set before update to direct advertising */
+// 	ret = bt_le_ext_adv_set_data(ext_adv, NULL, 0, NULL, 0);
+// 	if (ret) {
+// 		LOG_ERR("Failed to clear advertising data. Err: %d", ret);
+// 		return ret;
+// 	}
 
-	ret = bt_le_ext_adv_update_param(ext_adv, &adv_param);
-	if (ret) {
-		LOG_ERR("Failed to update ext_adv to direct advertising. Err = %d", ret);
-		return ret;
-	}
+// 	ret = bt_le_ext_adv_update_param(ext_adv, &adv_param);
+// 	if (ret) {
+// 		LOG_ERR("Failed to update ext_adv to direct advertising. Err = %d", ret);
+// 		return ret;
+// 	}
 
-	bt_addr_le_to_str(&addr, addr_buf, BT_ADDR_LE_STR_LEN);
-	LOG_INF("Set direct advertising to %s", addr_buf);
+// 	bt_addr_le_to_str(&addr, addr_buf, BT_ADDR_LE_STR_LEN);
+// 	LOG_INF("Set direct advertising to %s", addr_buf);
 
-	return 0;
-}
+// 	return 0;
+// }
 
 static int extended_adv_create(void)
 {
@@ -146,21 +146,21 @@ static void advertising_process(struct k_work *work)
 		bt_foreach_bond(BT_ID_DEFAULT, bond_find, NULL);
 	}
 
-	bt_addr_le_t addr;
+	// bt_addr_le_t addr;
 
-	if (!k_msgq_get(&bonds_queue, &addr, K_NO_WAIT)) {
-		ret = direct_adv_create(addr);
-		if (ret) {
-			LOG_WRN("Failed to create direct advertisement: %d", ret);
-			return;
-		}
-	} else {
+	// if (!k_msgq_get(&bonds_queue, &addr, K_NO_WAIT)) {
+	// 	ret = direct_adv_create(addr);
+	// 	if (ret) {
+	// 		LOG_WRN("Failed to create direct advertisement: %d", ret);
+	// 		return;
+	// 	}
+	// } else {
 		ret = extended_adv_create();
 		if (ret) {
 			LOG_WRN("Failed to create extended advertisement: %d", ret);
 			return;
 		}
-	}
+	// }
 
 	ret = bt_le_ext_adv_start(ext_adv, BT_LE_EXT_ADV_START_DEFAULT);
 	if (ret) {

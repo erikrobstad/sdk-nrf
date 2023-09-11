@@ -503,6 +503,10 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 
 		break;
 
+	case BT_MGMT_EXT_ADV_READY:
+		// TODO: BT_MGMT_EXT_ADV_READY event
+		break;
+
 	default:
 		LOG_WRN("Unexpected/unhandled bt_mgmt event: %d", event);
 
