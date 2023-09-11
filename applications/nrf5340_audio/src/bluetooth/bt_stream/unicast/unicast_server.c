@@ -13,7 +13,6 @@
 #include <zephyr/bluetooth/audio/pacs.h>
 #include <zephyr/bluetooth/audio/csip.h>
 #include <zephyr/bluetooth/audio/cap.h>
-#include <zephyr/bluetooth/audio/tmap.h>
 
 /* TODO: Remove when a get_info function is implemented in host */
 #include <../subsys/bluetooth/audio/bap_endpoint.h>
@@ -72,13 +71,6 @@ static const uint8_t cap_adv_data[] = {
 	BT_AUDIO_UNICAST_ANNOUNCEMENT_TARGETED,
 };
 
-static uint8_t tmap_adv_data[] = {
-	BT_UUID_16_ENCODE(BT_UUID_TMAS_VAL),
-	BT_BYTES_LIST_LE16(BT_TMAP_ROLE_UMR | BT_TMAP_ROLE_CT),
-};
-
-static uint8_t csis_rsi_adv_data[BT_CSIP_RSI_SIZE];
-
 #if defined(CONFIG_BT_AUDIO_TX)
 #define AVAILABLE_SOURCE_CONTEXT                                                                   \
 	(BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED | BT_AUDIO_CONTEXT_TYPE_CONVERSATIONAL |                \
@@ -88,7 +80,9 @@ static uint8_t csis_rsi_adv_data[BT_CSIP_RSI_SIZE];
 #endif
 
 #if defined(CONFIG_BT_AUDIO_RX)
-#define AVAILABLE_SINK_CONTEXT (BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED | BT_AUDIO_CONTEXT_TYPE_MEDIA)
+#define AVAILABLE_SINK_CONTEXT                                                                     \
+	(BT_AUDIO_CONTEXT_TYPE_UNSPECIFIED | BT_AUDIO_CONTEXT_TYPE_MEDIA |                         \
+	 BT_AUDIO_CONTEXT_TYPE_CONVERSATIONAL)
 #else
 #define AVAILABLE_SINK_CONTEXT 0x0000
 #endif
@@ -97,7 +91,9 @@ static uint8_t unicast_server_adv_data[] = {
 	BT_UUID_16_ENCODE(BT_UUID_ASCS_VAL),
 	BT_AUDIO_UNICAST_ANNOUNCEMENT_TARGETED,
 	BT_BYTES_LIST_LE16(AVAILABLE_SINK_CONTEXT),
+#if defined(CONFIG_BT_AUDIO_TX)
 	BT_BYTES_LIST_LE16(AVAILABLE_SOURCE_CONTEXT),
+#endif
 	0x00, /* Metadata length */
 };
 
@@ -136,8 +132,8 @@ struct bt_csip_set_member_register_param csip_param = {
 	.lockable = true,
 #if !CONFIG_BT_CSIP_SET_MEMBER_TEST_SAMPLE_DATA
 	/* CSIP SIRK for demo is used, must be changed before production */
-	.set_sirk = {'N', 'R', 'F', '5', '3', '4', '0', '_', 'T', 'W', 'S', '_', 'D', 'E', 'M',
-		     'O'},
+	.set_sirk = {'N', 'R', 'F', '5', '3', '4', '0', '_', 'T', 'W', 'S', '_', 'T', 'E', 'S',
+		     'T'},
 #else
 #warning "CSIP test sample data is used, must be changed before production"
 #endif
@@ -480,23 +476,14 @@ int unicast_server_adv_get(struct net_buf_simple *uuid_buf, struct bt_data *adv_
 	adv_buf[adv_buf_cnt].data = &unicast_server_adv_data[0];
 	adv_buf_cnt++;
 
-	if ((adv_buf_vacant - adv_buf_cnt) == 0) {
-		return -ENOMEM;
-	}
-
-	adv_buf[adv_buf_cnt].type = BT_DATA_SVC_DATA16;
-	adv_buf[adv_buf_cnt].data_len = ARRAY_SIZE(tmap_adv_data);
-	adv_buf[adv_buf_cnt].data = &tmap_adv_data[0];
-	adv_buf_cnt++;
-
 #if defined(CONFIG_BT_CSIP_SET_MEMBER)
 	if ((adv_buf_vacant - adv_buf_cnt) == 0) {
 		return -ENOMEM;
 	}
 
 	adv_buf[adv_buf_cnt].type = BT_DATA_CSIS_RSI;
-	adv_buf[adv_buf_cnt].data_len = ARRAY_SIZE(csis_rsi_adv_data);
-	adv_buf[adv_buf_cnt].data = &csis_rsi_adv_data[0];
+	adv_buf[adv_buf_cnt].data_len = ARRAY_SIZE(csip_rsi_adv_data);
+	adv_buf[adv_buf_cnt].data = &csip_rsi_adv_data[0];
 	adv_buf_cnt++;
 #endif /* CONFIG_BT_CSIP_SET_MEMBER */
 
@@ -511,6 +498,13 @@ int unicast_server_adv_get(struct net_buf_simple *uuid_buf, struct bt_data *adv_
 
 	if ((adv_buf_vacant - adv_buf_cnt) == 0) {
 		return -ENOMEM;
+	}
+
+	enum audio_channel channel;
+	channel_assignment_get(&channel);
+
+	if (channel == AUDIO_CH_R) {
+		flags_adv_data[0] = BT_LE_AD_LIMITED | BT_LE_AD_NO_BREDR;
 	}
 
 	adv_buf[adv_buf_cnt].type = BT_DATA_FLAGS;

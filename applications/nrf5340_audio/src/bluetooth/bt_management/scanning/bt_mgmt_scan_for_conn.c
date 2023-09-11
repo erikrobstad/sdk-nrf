@@ -78,6 +78,12 @@ static bool device_name_check(struct bt_data *data, void *user_data)
 	bt_addr_le_t *addr = user_data;
 	struct bt_conn *conn;
 
+	static bool conn_created;
+
+	if (conn_created) {
+		return false;
+	}
+
 	/* We only care about LTVs with name */
 	if (data->type == BT_DATA_NAME_COMPLETE) {
 		size_t srch_name_size = strlen(srch_name);
@@ -104,6 +110,9 @@ static bool device_name_check(struct bt_data *data, void *user_data)
 					LOG_ERR("Failed to restart scanning: %d", ret);
 				}
 			}
+
+			LOG_WRN("Connection created, will not connect to any more devices");
+			conn_created = true;
 
 			return false;
 		}

@@ -15,4 +15,8 @@ config BT_ATT_ENFORCE_FLOW
 config BT_HCI_VS_EXT
 	default n
 
+# Disable HCI ACL flow control
+config BT_HCI_ACL_FLOW_CONTROL
+	default n
+
 endif # BT_LL_ACS_NRF53
