@@ -21,7 +21,7 @@
 #include "channel_assignment.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(broadcast_sink, CONFIG_BLE_LOG_LEVEL);
+LOG_MODULE_REGISTER(broadcast_sink, CONFIG_BROADCAST_SINK_LOG_LEVEL);
 
 BUILD_ASSERT(CONFIG_BT_BAP_BROADCAST_SNK_STREAM_COUNT <= 2,
 	     "A maximum of two broadcast streams are currently supported");
@@ -59,16 +59,18 @@ static struct active_audio_stream active_stream;
 static uint8_t sync_stream_cnt;
 static uint8_t active_stream_index;
 
-/* We need to set a location as a pre-compile, this changed in initialize */
+/* We need to set a location as a pre-compile, this changes when initializing */
 static struct bt_codec codec_capabilities =
 	BT_CODEC_LC3_CONFIG_48_4(BT_AUDIO_LOCATION_FRONT_LEFT, BT_AUDIO_CONTEXT_TYPE_MEDIA);
+
+static struct bt_pacs_cap capabilities = {
+	.codec = &codec_capabilities,
+};
 
 static le_audio_receive_cb receive_cb;
 
 static bool init_routine_completed;
 static bool paused;
-
-static int bis_headset_cleanup(void);
 
 static void le_audio_event_publish(enum le_audio_evt_type event)
 {
@@ -130,6 +132,24 @@ static bool bitrate_check(const struct bt_codec *codec)
 	}
 
 	return true;
+}
+
+static int broadcast_sink_cleanup(void)
+{
+	int ret;
+
+	init_routine_completed = false;
+
+	if (broadcast_sink != NULL) {
+		ret = bt_bap_broadcast_sink_delete(broadcast_sink);
+		if (ret && ret != -EALREADY) {
+			return ret;
+		}
+
+		broadcast_sink = NULL;
+	}
+
+	return 0;
 }
 
 static void stream_started_cb(struct bt_bap_stream *stream)
@@ -203,7 +223,7 @@ static void pa_sync_lost_cb(struct bt_bap_broadcast_sink *sink)
 
 	LOG_DBG("Sink disconnected");
 
-	ret = bis_headset_cleanup();
+	ret = broadcast_sink_cleanup();
 	if (ret) {
 		LOG_ERR("Error cleaning up");
 		return;
@@ -361,28 +381,6 @@ static struct bt_bap_broadcast_sink_cb broadcast_sink_cbs = {
 	.syncable = syncable_cb,
 };
 
-static struct bt_pacs_cap capabilities = {
-	.codec = &codec_capabilities,
-};
-
-static int bis_headset_cleanup(void)
-{
-	int ret;
-
-	init_routine_completed = false;
-
-	if (broadcast_sink != NULL) {
-		ret = bt_bap_broadcast_sink_delete(broadcast_sink);
-		if (ret && ret != -EALREADY) {
-			return ret;
-		}
-
-		broadcast_sink = NULL;
-	}
-
-	return 0;
-}
-
 int broadcast_sink_change_active_audio_stream(void)
 {
 	int ret;
@@ -465,7 +463,7 @@ int broadcast_sink_pa_sync_set(struct bt_le_per_adv_sync *pa_sync, uint32_t broa
 				return ret;
 			}
 
-			bis_headset_cleanup();
+			broadcast_sink_cleanup();
 		}
 	}
 
@@ -531,7 +529,7 @@ int broadcast_sink_disable(void)
 		}
 	}
 
-	ret = bis_headset_cleanup();
+	ret = broadcast_sink_cleanup();
 	if (ret) {
 		LOG_ERR("Error cleaning up");
 		return ret;

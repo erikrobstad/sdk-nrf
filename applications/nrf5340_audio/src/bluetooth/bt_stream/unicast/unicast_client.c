@@ -1286,7 +1286,7 @@ int unicast_client_stop(void)
 	return 0;
 }
 
-int unicast_client_send(struct encoded_audio enc_audio)
+int unicast_client_send(struct le_audio_encoded_audio enc_audio)
 {
 	int ret;
 	size_t data_size_pr_stream;

@@ -22,7 +22,7 @@
 #include "nrf5340_audio_common.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(broadcast_source, CONFIG_BLE_LOG_LEVEL);
+LOG_MODULE_REGISTER(broadcast_source, CONFIG_BROADCAST_SOURCE_LOG_LEVEL);
 
 BUILD_ASSERT(CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT <= 2,
 	     "A maximum of two audio streams are currently supported");
@@ -32,6 +32,44 @@ ZBUS_CHAN_DEFINE(le_audio_chan, struct le_audio_msg, NULL, NULL, ZBUS_OBSERVERS_
 
 ZBUS_CHAN_DEFINE(sdu_ref_chan, struct sdu_ref_msg, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
+
+#if CONFIG_BT_AUDIO_BROADCAST_CONFIGURABLE
+#define BT_BAP_LC3_BROADCAST_PRESET_NRF5340_AUDIO                                                  \
+	BT_BAP_LC3_PRESET_CONFIGURABLE(                                                            \
+		BT_AUDIO_LOCATION_FRONT_LEFT | BT_AUDIO_LOCATION_FRONT_RIGHT,                      \
+		BT_AUDIO_CONTEXT_TYPE_MEDIA, CONFIG_BT_AUDIO_BITRATE_BROADCAST_SRC)
+
+#elif CONFIG_BT_BAP_BROADCAST_16_2_1
+#define BT_BAP_LC3_BROADCAST_PRESET_NRF5340_AUDIO                                                  \
+	BT_BAP_LC3_BROADCAST_PRESET_16_2_1(BT_AUDIO_LOCATION_FRONT_LEFT |                          \
+						   BT_AUDIO_LOCATION_FRONT_RIGHT,                  \
+					   BT_AUDIO_CONTEXT_TYPE_MEDIA)
+
+#elif CONFIG_BT_BAP_BROADCAST_24_2_1
+#define BT_BAP_LC3_BROADCAST_PRESET_NRF5340_AUDIO                                                  \
+	BT_BAP_LC3_BROADCAST_PRESET_24_2_1(BT_AUDIO_LOCATION_FRONT_LEFT |                          \
+						   BT_AUDIO_LOCATION_FRONT_RIGHT,                  \
+					   BT_AUDIO_CONTEXT_TYPE_MEDIA)
+
+#elif CONFIG_BT_BAP_BROADCAST_16_2_2
+#define BT_BAP_LC3_BROADCAST_PRESET_NRF5340_AUDIO                                                  \
+	BT_BAP_LC3_BROADCAST_PRESET_16_2_2(BT_AUDIO_LOCATION_FRONT_LEFT |                          \
+						   BT_AUDIO_LOCATION_FRONT_RIGHT,                  \
+					   BT_AUDIO_CONTEXT_TYPE_MEDIA)
+
+#elif CONFIG_BT_BAP_BROADCAST_24_2_2
+#define BT_BAP_LC3_BROADCAST_PRESET_NRF5340_AUDIO                                                  \
+	BT_BAP_LC3_BROADCAST_PRESET_24_2_2(BT_AUDIO_LOCATION_FRONT_LEFT |                          \
+						   BT_AUDIO_LOCATION_FRONT_RIGHT,                  \
+					   BT_AUDIO_CONTEXT_TYPE_MEDIA)
+
+#else
+#error Unsupported LC3 codec preset for broadcast
+#endif /* CONFIG_BT_AUDIO_BROADCAST_CONFIGURABLE */
+
+#define STANDARD_QUALITY_16KHZ 16000
+#define STANDARD_QUALITY_24KHZ 24000
+#define HIGH_QUALITY_48KHZ     48000
 
 #define HCI_ISO_BUF_ALLOC_PER_CHAN 2
 /* For being able to dynamically define iso_tx_pools */
@@ -52,12 +90,11 @@ static struct bt_cap_stream cap_streams[CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT
 
 static struct bt_bap_lc3_preset lc3_preset = BT_BAP_LC3_BROADCAST_PRESET_NRF5340_AUDIO;
 
-static atomic_t iso_tx_pool_alloc[CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT];
-static bool delete_broadcast_src;
-static uint32_t seq_num[CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT];
-
 static struct bt_le_ext_adv *adv;
+static atomic_t iso_tx_pool_alloc[CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT];
+static uint32_t seq_num[CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT];
 static bool initialized;
+static bool delete_broadcast_src;
 
 #if (CONFIG_AURACAST)
 NET_BUF_SIMPLE_DEFINE(pba_buf, BT_UUID_SIZE_16 + 2);
@@ -169,11 +206,9 @@ static void stream_stopped_cb(struct bt_bap_stream *stream, uint8_t reason)
 }
 
 static struct bt_bap_stream_ops stream_ops = {
+	.sent = stream_sent_cb,
 	.started = stream_started_cb,
 	.stopped = stream_stopped_cb,
-#if (CONFIG_BT_AUDIO_TX)
-	.sent = stream_sent_cb,
-#endif /* (CONFIG_BT_AUDIO_TX) */
 };
 
 #if (CONFIG_AURACAST)
@@ -354,7 +389,7 @@ int broadcast_source_stop(void)
 	return 0;
 }
 
-int broadcast_source_send(struct encoded_audio enc_audio)
+int broadcast_source_send(struct le_audio_encoded_audio enc_audio)
 {
 	int ret;
 	static bool wrn_printed[CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT];
@@ -535,7 +570,6 @@ int broadcast_source_enable(void)
 	LOG_DBG("Creating broadcast source");
 
 	ret = bt_cap_initiator_broadcast_audio_create(&create_param, &broadcast_source);
-
 	if (ret) {
 		LOG_ERR("Failed to create broadcast source, ret: %d", ret);
 		return ret;
@@ -543,7 +577,6 @@ int broadcast_source_enable(void)
 
 	/* Create advertising set */
 	ret = adv_create();
-
 	if (ret) {
 		LOG_ERR("Failed to create advertising set");
 		return ret;

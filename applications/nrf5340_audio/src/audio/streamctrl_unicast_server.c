@@ -568,33 +568,6 @@ static int audio_datapath_thread_create(void)
 	return 0;
 }
 
-uint8_t stream_state_get(void)
-{
-	return strm_state;
-}
-
-void streamctrl_send(void const *const data, size_t size, uint8_t num_ch)
-{
-	int ret;
-	static int prev_ret;
-
-	struct encoded_audio enc_audio = {.data = data, .size = size, .num_ch = num_ch};
-
-	if (strm_state == STATE_STREAMING) {
-		ret = unicast_server_send(enc_audio);
-
-		if (ret != 0 && ret != prev_ret) {
-			if (ret == -ECANCELED) {
-				LOG_WRN("Sending operation cancelled");
-			} else {
-				LOG_WRN("Problem with sending LE audio data, ret: %d", ret);
-			}
-		}
-
-		prev_ret = ret;
-	}
-}
-
 static int ext_adv_populate(struct bt_data *ext_adv_buf, size_t ext_adv_buf_size,
 			    size_t *ext_adv_count)
 {
@@ -643,6 +616,33 @@ static int ext_adv_populate(struct bt_data *ext_adv_buf, size_t ext_adv_buf_size
 	return 0;
 }
 
+uint8_t stream_state_get(void)
+{
+	return strm_state;
+}
+
+void streamctrl_send(void const *const data, size_t size, uint8_t num_ch)
+{
+	int ret;
+	static int prev_ret;
+
+	struct le_audio_encoded_audio enc_audio = {.data = data, .size = size, .num_ch = num_ch};
+
+	if (strm_state == STATE_STREAMING) {
+		ret = unicast_server_send(enc_audio);
+
+		if (ret != 0 && ret != prev_ret) {
+			if (ret == -ECANCELED) {
+				LOG_WRN("Sending operation cancelled");
+			} else {
+				LOG_WRN("Problem with sending LE audio data, ret: %d", ret);
+			}
+		}
+
+		prev_ret = ret;
+	}
+}
+
 int streamctrl_start(void)
 {
 	int ret;
@@ -670,7 +670,7 @@ int streamctrl_start(void)
 	ret = audio_datapath_thread_create();
 	ERR_CHK_MSG(ret, "Failed to create audio datapath thread");
 
-	ret = unicast_server_enable(le_audio_rx_data_handler, NULL);
+	ret = unicast_server_enable(le_audio_rx_data_handler);
 	ERR_CHK_MSG(ret, "Failed to enable LE Audio");
 
 	ret = bt_rend_init();

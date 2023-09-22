@@ -51,7 +51,7 @@ typedef void (*le_audio_receive_cb)(const uint8_t *const data, size_t size, bool
  *
  * @note	Container for SW codec (typically LC3) compressed audio data.
  */
-struct encoded_audio {
+struct le_audio_encoded_audio {
 	uint8_t const *const data;
 	size_t size;
 	uint8_t num_ch;

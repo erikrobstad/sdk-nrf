@@ -8,7 +8,6 @@
 #define _BROADCAST_SOURCE_H_
 
 #include "le_audio.h"
-#include "broadcast.h"
 
 /**
  * @brief	Get the data to advertise.
@@ -45,7 +44,7 @@ int broadcast_source_stop(void);
  *
  * @return	0 for success, error otherwise.
  */
-int broadcast_source_send(struct encoded_audio enc_audio);
+int broadcast_source_send(struct le_audio_encoded_audio enc_audio);
 
 /**
  * @brief	Disable the LE Audio broadcast (BIS) source.

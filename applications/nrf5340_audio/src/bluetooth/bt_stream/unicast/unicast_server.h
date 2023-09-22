@@ -12,16 +12,6 @@
 #include <audio_defines.h>
 
 /**
- * @brief	Callback for using the timestamp of the previously sent audio packet.
- *
- * @note	Can be used for drift calculation or compensation.
- *
- * @param[in]	timestamp	The timestamp of the previously sent audio packet.
- * @param[in]	adjust		Indicate if the sdu_ref should be used to adjust timing.
- */
-typedef void (*timestamp_cb)(uint32_t timestamp, bool adjust);
-
-/**
  * @brief	Get configuration for audio stream.
  *
  * @param[out]	bitrate			Pointer to the bitrate used; can be NULL.
@@ -64,7 +54,7 @@ int unicast_server_adv_populate(struct bt_data *adv_buf, uint8_t adv_buf_vacant)
  *
  * @return	0 for success, error otherwise.
  */
-int unicast_server_send(struct encoded_audio enc_audio);
+int unicast_server_send(struct le_audio_encoded_audio enc_audio);
 
 /**
  * @brief	Disable the Bluetooth LE Audio unicast (CIS) server.
@@ -78,6 +68,6 @@ int unicast_server_disable(void);
  *
  * @return	0 for success, error otherwise.
  */
-int unicast_server_enable(le_audio_receive_cb rx_cb, timestamp_cb timestmp_cb);
+int unicast_server_enable(le_audio_receive_cb rx_cb);
 
 #endif /* _UNICAST_SERVER_H_ */
