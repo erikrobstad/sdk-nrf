@@ -258,7 +258,7 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 	msg = zbus_chan_const_msg(chan);
 
 	switch (msg->event) {
-	case BT_MGMT_EXT_ADV_READY:
+	case BT_MGMT_EXT_ADV_WITH_PA_READY:
 		LOG_INF("Ext adv ready");
 
 		ret = broadcast_source_start(msg->ext_adv);

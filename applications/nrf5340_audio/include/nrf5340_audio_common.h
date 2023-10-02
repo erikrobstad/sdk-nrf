@@ -47,7 +47,7 @@ struct sdu_ref_msg {
 };
 
 enum bt_mgmt_evt_type {
-	BT_MGMT_EXT_ADV_READY = 1,
+	BT_MGMT_EXT_ADV_WITH_PA_READY = 1,
 	BT_MGMT_CONNECTED,
 	BT_MGMT_SECURITY_CHANGED,
 	BT_MGMT_PA_SYNC_OBJECT_READY,
