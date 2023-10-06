@@ -397,6 +397,8 @@ int broadcast_source_send(struct le_audio_encoded_audio enc_audio)
 	struct net_buf *buf;
 	size_t num_streams = ARRAY_SIZE(cap_streams);
 	size_t data_size_pr_stream;
+	struct bt_iso_tx_info tx_info = {0};
+	struct sdu_ref_msg msg;
 
 	if ((enc_audio.num_ch == 1) || (enc_audio.num_ch == num_streams)) {
 		data_size_pr_stream = enc_audio.size / enc_audio.num_ch;
@@ -454,15 +456,11 @@ int broadcast_source_send(struct le_audio_encoded_audio enc_audio)
 		}
 	}
 
-	struct bt_iso_tx_info tx_info = {0};
-
 	ret = bt_iso_chan_get_tx_sync(&cap_streams[0].bap_stream.ep->iso->chan, &tx_info);
 
 	if (ret) {
 		LOG_DBG("Error getting ISO TX anchor point: %d", ret);
 	} else {
-		struct sdu_ref_msg msg;
-
 		msg.timestamp = tx_info.ts;
 		msg.adjust = false;
 
