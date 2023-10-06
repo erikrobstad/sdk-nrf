@@ -164,6 +164,8 @@ static void hfclkaudio_set(uint16_t freq_value)
 	freq_val = MIN(freq_val, APLL_FREQ_MAX);
 	freq_val = MAX(freq_val, APLL_FREQ_MIN);
 
+	// LOG_ERR("freq_value: %d, freq_val: %d", freq_value, freq_val);
+
 	nrfx_clock_hfclkaudio_config_set(freq_val);
 }
 
@@ -189,10 +191,16 @@ static void drift_comp_state_set(enum drift_comp_state new_state)
  */
 static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 {
+	// static bool test = true;
+
 	switch (ctrl_blk.drift_comp.state) {
 	case DRIFT_STATE_INIT: {
 		/* Check if audio data has been received */
 		if (ctrl_blk.previous_sdu_ref_us) {
+			// if (test) {
+			// 	test = false;
+			// 	return;
+			// }
 			ctrl_blk.drift_comp.meas_start_time_us = ctrl_blk.previous_sdu_ref_us;
 
 			drift_comp_state_set(DRIFT_STATE_CALIB);
@@ -211,6 +219,8 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
 		ctrl_blk.drift_comp.center_freq = APLL_FREQ_CENTER + freq_adj;
+
+		LOG_WRN("center_freq: %d", ctrl_blk.drift_comp.center_freq);
 
 		if ((ctrl_blk.drift_comp.center_freq > (APLL_FREQ_MAX)) ||
 		    (ctrl_blk.drift_comp.center_freq < (APLL_FREQ_MIN))) {
@@ -232,11 +242,15 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 
 		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
 
+		LOG_ERR("err_us: %d, previous_sdu_ref_us: %d, frame_start_ts: %d", err_us, ctrl_blk.previous_sdu_ref_us, frame_start_ts);
+
 		if (err_us > (BLK_PERIOD_US / 2)) {
 			err_us = err_us - BLK_PERIOD_US;
 		}
 
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
+
+		// LOG_ERR("freq_adj: %d, err_us: %d", freq_adj, err_us);
 
 		hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
 
@@ -823,7 +837,7 @@ void audio_datapath_stream_out(const uint8_t *buf, size_t size, uint32_t sdu_ref
 			     (CONFIG_AUDIO_FRAME_DURATION_US + SDU_REF_DELTA_MAX_ERR_US)) ||
 			    (sdu_ref_delta_us <
 			     (CONFIG_AUDIO_FRAME_DURATION_US - SDU_REF_DELTA_MAX_ERR_US))) {
-				LOG_DBG("Invalid sdu_ref_us delta (%d) - Estimating sdu_ref_us",
+				LOG_WRN("Invalid sdu_ref_us delta (%d) - Estimating sdu_ref_us",
 					sdu_ref_delta_us);
 
 				/* Estimate sdu_ref_us */
