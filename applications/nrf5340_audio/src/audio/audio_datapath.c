@@ -48,7 +48,7 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_AUDIO_DATAPATH_LOG_LEVEL);
 /* Number of audio blocks given a duration */
 #define NUM_BLKS(d)	    ((d) / BLK_PERIOD_US)
 /* Single audio block size in number of samples (stereo) */
-#define BLK_SIZE_SAMPLES(r) (((r)*BLK_PERIOD_US) / 1000000)
+#define BLK_SIZE_SAMPLES(r) (((r) * BLK_PERIOD_US) / 1000000)
 /* Increment sample FIFO index by one block */
 #define NEXT_IDX(i)	    (((i) < (FIFO_NUM_BLKS - 1)) ? ((i) + 1) : 0)
 /* Decrement sample FIFO index by one block */
@@ -70,7 +70,7 @@ LOG_MODULE_REGISTER(audio_datapath, CONFIG_AUDIO_DATAPATH_LOG_LEVEL);
 #define APLL_FREQ_MIN	 36834
 #define APLL_FREQ_MAX	 42874
 /* Use nanoseconds to reduce rounding errors */
-#define APLL_FREQ_ADJ(t) (-((t)*1000) / 331)
+#define APLL_FREQ_ADJ(t) (-((t) * 1000) / 331)
 
 #define DRIFT_MEAS_PERIOD_US	100000
 #define DRIFT_ERR_THRESH_LOCK	16
@@ -175,8 +175,6 @@ static void drift_comp_state_set(enum drift_comp_state new_state)
 		return;
 	}
 
-	ctrl_blk.drift_comp.ctr = 0;
-
 	ctrl_blk.drift_comp.state = new_state;
 	LOG_INF("Drft comp state: %s", drift_comp_state_names[new_state]);
 }
@@ -194,6 +192,7 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 	case DRIFT_STATE_INIT: {
 		/* Check if audio data has been received */
 		if (ctrl_blk.previous_sdu_ref_us) {
+			ctrl_blk.drift_comp.ctr = 0;
 			ctrl_blk.drift_comp.meas_start_time_us = ctrl_blk.previous_sdu_ref_us;
 
 			drift_comp_state_set(DRIFT_STATE_CALIB);
@@ -205,6 +204,8 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 			/* Waiting */
 			return;
 		}
+
+		ctrl_blk.drift_comp.ctr = 0;
 
 		int32_t err_us = DRIFT_MEAS_PERIOD_US - (ctrl_blk.previous_sdu_ref_us -
 							 ctrl_blk.drift_comp.meas_start_time_us);
@@ -231,6 +232,8 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 			return;
 		}
 
+		ctrl_blk.drift_comp.ctr = 0;
+
 		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
 
 		if (err_us > (BLK_PERIOD_US / 2)) {
@@ -253,6 +256,8 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 			return;
 		}
 
+		ctrl_blk.drift_comp.ctr = 0;
+
 		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
 
 		if (err_us > (BLK_PERIOD_US / 2)) {
@@ -267,8 +272,6 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 
 		if ((err_us > DRIFT_ERR_THRESH_UNLOCK) || (err_us < -DRIFT_ERR_THRESH_UNLOCK)) {
 			drift_comp_state_set(DRIFT_STATE_INIT);
-		} else {
-			ctrl_blk.drift_comp.ctr = 0;
 		}
 
 		break;
@@ -286,8 +289,6 @@ static void pres_comp_state_set(enum pres_comp_state new_state)
 	if (new_state == ctrl_blk.pres_comp.state) {
 		return;
 	}
-
-	ctrl_blk.pres_comp.ctr = 0;
 
 	ctrl_blk.pres_comp.state = new_state;
 	/* NOTE: The string below is used by the Nordic CI system */
@@ -332,6 +333,7 @@ static void audio_datapath_presentation_compensation(uint32_t recv_frame_ts_us, 
 
 	switch (ctrl_blk.pres_comp.state) {
 	case PRES_STATE_INIT: {
+		ctrl_blk.pres_comp.ctr = 0;
 		ctrl_blk.pres_comp.sum_err_dly_us = 0;
 		pres_comp_state_set(PRES_STATE_MEAS);
 		break;
@@ -344,6 +346,8 @@ static void audio_datapath_presentation_compensation(uint32_t recv_frame_ts_us, 
 			/* Same state - Collect more data */
 			break;
 		}
+
+		ctrl_blk.pres_comp.ctr = 0;
 
 		pres_adj_us = ctrl_blk.pres_comp.sum_err_dly_us / PRES_COMP_NUM_DATA_PTS;
 		if ((pres_adj_us >= (BLK_PERIOD_US / 2)) || (pres_adj_us <= -(BLK_PERIOD_US / 2))) {
@@ -358,6 +362,7 @@ static void audio_datapath_presentation_compensation(uint32_t recv_frame_ts_us, 
 	case PRES_STATE_WAIT: {
 		if (ctrl_blk.pres_comp.ctr++ >
 		    (FIFO_SMPL_PERIOD_US / CONFIG_AUDIO_FRAME_DURATION_US)) {
+			ctrl_blk.pres_comp.ctr = 0;
 			pres_comp_state_set(PRES_STATE_INIT);
 		}
 
