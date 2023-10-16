@@ -390,6 +390,10 @@ static void audio_datapath_presentation_compensation(uint32_t sdu_ref_us,
 	/* Number of adjustment blocks is 0 as long as |pres_adj_us| < BLK_PERIOD_US */
 	int32_t pres_adj_blks = pres_adj_us / BLK_PERIOD_US;
 
+	if (pres_adj_blks == 0) {
+		LOG_DBG("pres_adj_blks is 0, pres_adj_us: %d", pres_adj_us);
+	}
+
 	if (pres_adj_blks > (FIFO_NUM_BLKS / 2)) {
 		/* Limit adjustment */
 		pres_adj_blks = FIFO_NUM_BLKS / 2;
@@ -565,8 +569,8 @@ static void audio_datapath_i2s_blk_complete(uint32_t frame_start_ts, uint32_t *r
 
 	/*** Presentation delay measurement ***/
 	ctrl_blk.pres_comp.curr_err_dly_us =
-		frame_start_ts - (ctrl_blk.out.prod_blk_ts[ctrl_blk.out.cons_blk_idx] +
-				  ctrl_blk.pres_comp.pres_delay_us);
+		ctrl_blk.pres_comp.pres_delay_us -
+		(frame_start_ts - ctrl_blk.out.prod_blk_ts[ctrl_blk.out.cons_blk_idx]);
 
 	/********** I2S TX **********/
 	static uint8_t *tx_buf;
