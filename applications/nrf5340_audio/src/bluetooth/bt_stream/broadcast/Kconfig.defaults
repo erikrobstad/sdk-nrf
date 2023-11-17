@@ -36,7 +36,7 @@ config BT_BAP_BROADCAST_SNK_COUNT
 	default 2
 
 config BT_ISO_MAX_CHAN
-	default 2
+	default 4
 
 config BT_ISO_MAX_BIG
 	default 2
@@ -52,6 +52,29 @@ config BT_PAC_SNK
 
 config BT_AUDIO_RX
 	default y
+
+# GATEWAY
+config BT_CAP_INITIATOR
+	default y
+
+# config BT_DEVICE_APPEARANCE
+# 	# Broadcasting Device - 0x0885
+# 	default 2181
+
+config BT_ISO_BROADCASTER
+	default y
+
+config BT_BAP_BROADCAST_SOURCE
+	default y
+
+config BT_ISO_TX_BUF_COUNT
+	default 2
+
+config BT_BAP_BROADCAST_SRC_STREAM_COUNT
+	default 1
+
+config BT_AUDIO_TX
+	default y	
 
 endif # AUDIO_DEV = 1 (HEADSET)
 
@@ -78,10 +101,10 @@ config BT_ISO_TX_BUF_COUNT
 	default 2
 
 config BT_BAP_BROADCAST_SRC_STREAM_COUNT
-	default 2
+	default 1
 
 config BT_ISO_MAX_CHAN
-	default 2
+	default 1
 
 config BT_AUDIO_TX
 	default y

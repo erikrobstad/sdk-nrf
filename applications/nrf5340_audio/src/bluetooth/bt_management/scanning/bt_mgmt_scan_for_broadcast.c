@@ -46,6 +46,11 @@ static void scan_restart_worker(struct k_work *work)
 {
 	int ret;
 
+	ret = bt_le_scan_stop();
+	if (ret) {
+		LOG_WRN("Stop scan failed: %d", ret);
+	}
+
 	/* Delete pending PA sync before restarting scan */
 	ret = bt_mgmt_pa_sync_delete(pa_sync);
 	if (ret) {
@@ -93,15 +98,12 @@ static void periodic_adv_sync(const struct bt_le_scan_recv_info *info, uint32_t 
 	bt_le_scan_cb_unregister(&scan_callback);
 	scan_cb_registered = false;
 
-	ret = bt_le_scan_stop();
-	if (ret) {
-		LOG_WRN("Stop scan failed: %d", ret);
-	}
+	// Removed scan_stop from here so we are able to control the scanning parameters
 
 	bt_addr_le_copy(&param.addr, info->addr);
 	param.options = 0;
 	param.sid = info->sid;
-	param.skip = PA_SYNC_SKIP;
+	param.skip = 0;
 	param.timeout = interval_to_sync_timeout(info->interval);
 
 	broadcaster_broadcast_id = broadcast_id;
@@ -203,6 +205,11 @@ static void pa_synced_cb(struct bt_le_per_adv_sync *sync,
 	LOG_DBG("PA synced");
 
 	k_timer_stop(&pa_sync_timer);
+
+	ret = bt_le_scan_stop();
+	if (ret) {
+		LOG_WRN("Stop scan failed: %d", ret);
+	}
 
 	msg.event = BT_MGMT_PA_SYNCED;
 	msg.pa_sync = sync;

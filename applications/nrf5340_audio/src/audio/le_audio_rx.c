@@ -139,15 +139,18 @@ static void audio_datapath_thread(void *dummy1, void *dummy2, void *dummy3)
 							&iso_received_size, K_FOREVER);
 		ERR_CHK(ret);
 
-		if (IS_ENABLED(CONFIG_AUDIO_SOURCE_USB) && (CONFIG_AUDIO_DEV == GATEWAY)) {
-			ret = audio_system_decode(iso_received->data, iso_received->data_size,
-						  iso_received->bad_frame);
-			ERR_CHK(ret);
-		} else {
-			audio_datapath_stream_out(iso_received->data, iso_received->data_size,
-						  iso_received->sdu_ref, iso_received->bad_frame,
-						  iso_received->recv_frame_ts);
-		}
+		// if (IS_ENABLED(CONFIG_AUDIO_SOURCE_USB) && (CONFIG_AUDIO_DEV == GATEWAY)) {
+		// 	ret = audio_system_decode(iso_received->data, iso_received->data_size,
+		// 				  iso_received->bad_frame);
+		// 	ERR_CHK(ret);
+		// } else {
+		// 	audio_datapath_stream_out(iso_received->data, iso_received->data_size,
+		// 				  iso_received->sdu_ref, iso_received->bad_frame,
+		// 				  iso_received->recv_frame_ts);
+		// }
+
+		streamctrl_send(iso_received->data, iso_received->data_size, 1);
+
 		data_fifo_block_free(&ble_fifo_rx, (void *)iso_received);
 
 		STACK_USAGE_PRINT("audio_datapath_thread", &audio_datapath_thread_data);

@@ -173,8 +173,8 @@ int bt_mgmt_ctlr_cfg_manufacturer_get(bool print_version, uint16_t *manufacturer
 				rp->hci_version,
 				rp->hci_revision);
 		} else {
-			LOG_ERR("Unsupported controller");
-			return -EPERM;
+			LOG_WRN("Unsupported or Zephyr controller");
+			// return -EPERM;
 		}
 	}
 

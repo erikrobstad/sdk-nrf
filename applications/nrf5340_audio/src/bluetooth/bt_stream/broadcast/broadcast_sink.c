@@ -237,6 +237,7 @@ static void stream_recv_cb(struct bt_bap_stream *stream, const struct bt_iso_rec
 
 	if (!(info->flags & BT_ISO_FLAGS_VALID)) {
 		bad_frame = true;
+		LOG_WRN("Bad frame: 0x%x", info->flags);
 	}
 
 	receive_cb(buf->data, buf->len, bad_frame, info->ts, active_stream_index,
@@ -390,7 +391,6 @@ static void syncable_cb(struct bt_bap_broadcast_sink *sink, bool encrypted)
 
 	ret = bt_bap_broadcast_sink_sync(broadcast_sink, bis_index_bitfields[active_stream_index],
 					 audio_streams_p, bis_encryption_key);
-
 	if (ret) {
 		LOG_WRN("Unable to sync to broadcast source, ret: %d", ret);
 		return;

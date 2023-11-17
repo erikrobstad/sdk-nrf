@@ -30,8 +30,12 @@ LOG_MODULE_REGISTER(broadcast_source, CONFIG_BROADCAST_SOURCE_LOG_LEVEL);
 BUILD_ASSERT(CONFIG_BT_BAP_BROADCAST_SRC_STREAM_COUNT <= 2,
 	     "A maximum of two audio streams are currently supported");
 
+#if (CONFIG_AUDIO_DEV == GATEWAY)
 ZBUS_CHAN_DEFINE(le_audio_chan, struct le_audio_msg, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
+#else
+ZBUS_CHAN_DECLARE(le_audio_chan);
+#endif /* (CONFIG_AUDIO_DEV == GATEWAY) */
 
 ZBUS_CHAN_DEFINE(sdu_ref_chan, struct sdu_ref_msg, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		 ZBUS_MSG_INIT(0));
@@ -74,7 +78,7 @@ ZBUS_CHAN_DEFINE(sdu_ref_chan, struct sdu_ref_msg, NULL, NULL, ZBUS_OBSERVERS_EM
 #define STANDARD_QUALITY_24KHZ 24000
 #define HIGH_QUALITY_48KHZ     48000
 
-#define HCI_ISO_BUF_ALLOC_PER_CHAN 2
+#define HCI_ISO_BUF_ALLOC_PER_CHAN 4
 /* For being able to dynamically define iso_tx_pools */
 #define NET_BUF_POOL_ITERATE(i, _)                                                                 \
 	NET_BUF_POOL_FIXED_DEFINE(iso_tx_pool_##i, HCI_ISO_BUF_ALLOC_PER_CHAN,                     \
@@ -410,10 +414,10 @@ int broadcast_source_send(struct le_audio_encoded_audio enc_audio)
 		return -EINVAL;
 	}
 
-	if (data_size_pr_stream != LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_LC3_BITRATE)) {
-		LOG_ERR("The encoded data size does not match the SDU size");
-		return -ECANCELED;
-	}
+	// if (data_size_pr_stream != LE_AUDIO_SDU_SIZE_OCTETS(CONFIG_LC3_BITRATE)) {
+	// 	LOG_ERR("The encoded data size does not match the SDU size");
+	// 	return -ECANCELED;
+	// }
 
 	for (int i = 0; i < num_streams; i++) {
 		if (cap_streams[i].bap_stream.ep->status.state != BT_BAP_EP_STATE_STREAMING) {
