@@ -20,6 +20,8 @@
 #include "audio_datapath.h"
 #include "le_audio_rx.h"
 
+#include "broadcast_source.h"
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(streamctrl_broadcast_sink, CONFIG_STREAMCTRL_LOG_LEVEL);
 
@@ -66,7 +68,6 @@ static void button_msg_sub_thread(void)
 {
 	int ret;
 	const struct zbus_channel *chan;
-	bool broadcast_alt = true;
 
 	while (1) {
 		ret = zbus_sub_wait(&button_evt_sub, &chan, K_FOREVER);
@@ -88,6 +89,11 @@ static void button_msg_sub_thread(void)
 		switch (msg.button_pin) {
 		case BUTTON_PLAY_PAUSE:
 			if (strm_state == STATE_STREAMING) {
+				ret = broadcast_source_stop();
+				if (ret) {
+					LOG_WRN("Failed to stop broadcaster: %d", ret);
+				}
+
 				ret = broadcast_sink_stop();
 				if (ret) {
 					LOG_WRN("Failed to stop broadcast sink: %d", ret);
@@ -96,6 +102,11 @@ static void button_msg_sub_thread(void)
 				ret = broadcast_sink_start();
 				if (ret) {
 					LOG_WRN("Failed to start broadcast sink: %d", ret);
+				}
+
+				ret = broadcast_source_start(NULL);
+				if (ret) {
+					LOG_WRN("Failed to start broadcaster: %d", ret);
 				}
 			} else {
 				LOG_WRN("In invalid state: %d", strm_state);
@@ -120,42 +131,17 @@ static void button_msg_sub_thread(void)
 			break;
 
 		case BUTTON_4:
-			ret = broadcast_sink_change_active_audio_stream();
-			if (ret) {
-				LOG_WRN("Failed to change active audio stream: %d", ret);
-			}
-
-			break;
-
-		case BUTTON_5:
-			if (IS_ENABLED(CONFIG_AUDIO_MUTE)) {
-				ret = bt_rend_volume_mute(false);
-				if (ret) {
-					LOG_WRN("Failed to mute, ret: %d", ret);
+			// if (IS_ENABLED(CONFIG_AUDIO_TEST_TONE)) {
+				if (strm_state != STATE_STREAMING) {
+					LOG_WRN("Not in streaming state");
+					break;
 				}
 
-				break;
-			}
-
-			ret = broadcast_sink_disable();
-			if (ret) {
-				LOG_ERR("Failed to disable the broadcast sink: %d", ret);
-				break;
-			}
-
-			if (broadcast_alt) {
-				ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST,
-							 CONFIG_BT_AUDIO_BROADCAST_NAME_ALT);
-				broadcast_alt = false;
-			} else {
-				ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST,
-							 CONFIG_BT_AUDIO_BROADCAST_NAME);
-				broadcast_alt = true;
-			}
-
-			if (ret) {
-				LOG_WRN("Failed to start scanning for broadcaster: %d", ret);
-			}
+				ret = audio_system_encode_test_tone_step();
+				if (ret) {
+					LOG_WRN("Failed to play test tone, ret: %d", ret);
+				}
+			// }
 
 			break;
 
@@ -176,6 +162,7 @@ static void le_audio_msg_sub_thread(void)
 	uint32_t pres_delay_us;
 	uint32_t bitrate_bps;
 	uint32_t sampling_rate_hz;
+	// static bool broadcast_started;
 
 	const struct zbus_channel *chan;
 
@@ -200,6 +187,25 @@ static void le_audio_msg_sub_thread(void)
 			stream_state_set(STATE_STREAMING);
 			ret = led_blink(LED_APP_1_BLUE);
 			ERR_CHK(ret);
+
+			// if (!broadcast_started) {
+			// 	size_t ext_adv_size = 0;
+			// 	size_t per_adv_size = 0;
+			// 	const struct bt_data *ext_adv = NULL;
+			// 	const struct bt_data *per_adv = NULL;
+
+			// 	ret = broadcast_source_enable();
+			// 	ERR_CHK_MSG(ret, "Failed to enable broadcaster");
+
+			// 	broadcast_source_adv_get(&ext_adv, &ext_adv_size, &per_adv,
+			// 				 &per_adv_size);
+
+			// 	ret = bt_mgmt_adv_start(ext_adv, ext_adv_size, per_adv,
+			// 				per_adv_size, false);
+			// 	ERR_CHK_MSG(ret, "Failed to start advertiser");
+
+			// 	broadcast_started = true;
+			// }
 
 			break;
 
@@ -357,6 +363,16 @@ static void bt_mgmt_evt_handler(const struct zbus_channel *chan)
 
 		break;
 
+	case BT_MGMT_EXT_ADV_WITH_PA_READY:
+		LOG_INF("Ext adv ready");
+
+		ret = broadcast_source_start(msg->ext_adv);
+		if (ret) {
+			LOG_ERR("Failed to start broadcaster: %d", ret);
+		}
+
+		break;
+
 	default:
 		LOG_WRN("Unexpected/unhandled bt_mgmt event: %d", msg->event);
 
@@ -413,11 +429,32 @@ uint8_t stream_state_get(void)
 
 void streamctrl_send(void const *const data, size_t size, uint8_t num_ch)
 {
-	ARG_UNUSED(data);
-	ARG_UNUSED(size);
-	ARG_UNUSED(num_ch);
+	// ARG_UNUSED(data);
+	// ARG_UNUSED(size);
+	// ARG_UNUSED(num_ch);
 
-	LOG_WRN("Sending is not possible for broadcast sink");
+	// TODO
+	
+	int ret;
+	static int prev_ret;
+
+	struct le_audio_encoded_audio enc_audio = {.data = data, .size = size, .num_ch = num_ch};
+
+	if (strm_state == STATE_STREAMING) {
+		ret = broadcast_source_send(enc_audio);
+
+		if (ret != 0 && ret != prev_ret) {
+			if (ret == -ECANCELED) {
+				LOG_WRN("Sending operation cancelled");
+			} else {
+				LOG_WRN("Problem with sending LE audio data, ret: %d", ret);
+			}
+		}
+
+		prev_ret = ret;
+
+		// LOG_INF("Data sent!");
+	}
 }
 
 int streamctrl_start(void)
@@ -429,6 +466,11 @@ int streamctrl_start(void)
 		LOG_WRN("Streamctrl already started");
 		return -EALREADY;
 	}
+
+	size_t ext_adv_size = 0;
+	size_t per_adv_size = 0;
+	const struct bt_data *ext_adv = NULL;
+	const struct bt_data *per_adv = NULL;
 
 	ret = audio_system_init();
 	ERR_CHK_MSG(ret, "Failed to initialize the audio system");
@@ -445,8 +487,16 @@ int streamctrl_start(void)
 	ret = broadcast_sink_enable(le_audio_rx_data_handler);
 	ERR_CHK_MSG(ret, "Failed to enable broadcast sink");
 
-	ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST, CONFIG_BT_AUDIO_BROADCAST_NAME);
+	ret = bt_mgmt_scan_start(0, 0, BT_MGMT_SCAN_TYPE_BROADCAST, CONFIG_BT_AUDIO_BROADCAST_NAME_ALT);
 	ERR_CHK_MSG(ret, "Failed to start scanning");
+
+	ret = broadcast_source_enable();
+	ERR_CHK_MSG(ret, "Failed to enable broadcaster");
+
+	broadcast_source_adv_get(&ext_adv, &ext_adv_size, &per_adv, &per_adv_size);
+
+	ret = bt_mgmt_adv_start(ext_adv, ext_adv_size, per_adv, per_adv_size, false);
+	ERR_CHK_MSG(ret, "Failed to start advertiser");
 
 	started = true;
 

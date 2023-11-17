@@ -57,26 +57,31 @@ static int leds_set(void)
 		return ret;
 	}
 
-#if (CONFIG_AUDIO_DEV == HEADSET)
-	enum audio_channel channel;
+// #if (CONFIG_AUDIO_DEV == HEADSET)
+// 	enum audio_channel channel;
 
-	channel_assignment_get(&channel);
+// 	channel_assignment_get(&channel);
 
-	if (channel == AUDIO_CH_L) {
-		ret = led_on(LED_APP_RGB, LED_COLOR_BLUE);
-	} else {
-		ret = led_on(LED_APP_RGB, LED_COLOR_MAGENTA);
-	}
+// 	if (channel == AUDIO_CH_L) {
+// 		ret = led_on(LED_APP_RGB, LED_COLOR_BLUE);
+// 	} else {
+// 		ret = led_on(LED_APP_RGB, LED_COLOR_MAGENTA);
+// 	}
 
-	if (ret) {
-		return ret;
-	}
-#elif (CONFIG_AUDIO_DEV == GATEWAY)
+// 	if (ret) {
+// 		return ret;
+// 	}
+// #elif (CONFIG_AUDIO_DEV == GATEWAY)
+// 	ret = led_on(LED_APP_RGB, LED_COLOR_GREEN);
+// 	if (ret) {
+// 		return ret;
+// 	}
+// #endif /* (CONFIG_AUDIO_DEV == HEADSET) */
+
 	ret = led_on(LED_APP_RGB, LED_COLOR_GREEN);
 	if (ret) {
 		return ret;
 	}
-#endif /* (CONFIG_AUDIO_DEV == HEADSET) */
 
 	return 0;
 }

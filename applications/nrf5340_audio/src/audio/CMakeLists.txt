@@ -16,7 +16,7 @@ if (CONFIG_BT_BAP_BROADCAST_SINK)
 	       ${CMAKE_CURRENT_SOURCE_DIR}/streamctrl_broadcast_sink.c)
 endif()
 
-if (CONFIG_BT_BAP_BROADCAST_SOURCE)
+if (CONFIG_BT_BAP_BROADCAST_SOURCE AND CONFIG_AUDIO_DEV EQUAL 2)
 	target_sources(app PRIVATE
 	       ${CMAKE_CURRENT_SOURCE_DIR}/streamctrl_broadcast_source.c)
 endif()

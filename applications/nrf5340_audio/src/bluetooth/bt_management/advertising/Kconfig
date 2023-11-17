@@ -25,7 +25,8 @@ config BLE_ACL_PER_ADV_INT_MAX
 config BLE_ACL_EXT_ADV_INT_MIN
 	hex "Minimum extended advertising interval"
 	range 0x0030 0x0780
-	default 0x30 if TRANSPORT_BIS
+	default 0x30 if (TRANSPORT_BIS && (AUDIO_DEV = 1))
+	default 0x40 if (TRANSPORT_BIS && (AUDIO_DEV = 2))
 	default 0x00A0
 	help
 	  Minimum hexadecimal value for the interval of extended advertisements.
@@ -37,7 +38,8 @@ config BLE_ACL_EXT_ADV_INT_MIN
 config BLE_ACL_EXT_ADV_INT_MAX
 	hex "Maximum extended advertising interval"
 	range 0x0030 0x0780
-	default 0x40 if TRANSPORT_BIS
+	default 0x40 if (TRANSPORT_BIS && (AUDIO_DEV = 1))
+	default 0x50 if (TRANSPORT_BIS && (AUDIO_DEV = 2))
 	default 0x00F0
 	help
 	  Maximum hexadecimal value for the interval of extended advertisements.

@@ -77,6 +77,10 @@ static void audio_headset_configure(void)
 {
 	if (IS_ENABLED(CONFIG_SW_CODEC_LC3)) {
 		sw_codec_cfg.sw_codec = SW_CODEC_LC3;
+		// sw_codec_cfg.encoder.bitrate = CONFIG_LC3_BITRATE;
+		// sw_codec_cfg.encoder.num_ch = 1;
+		// sw_codec_cfg.encoder.channel_mode = SW_CODEC_MONO;
+		// sw_codec_cfg.encoder.enabled = true;
 	} else {
 		ERR_CHK_MSG(-EINVAL, "No codec selected");
 	}
@@ -153,6 +157,8 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 				ERR_CHK(ret);
 			}
 
+			// LOG_ERR("FRAME_SIZE_BYTES: %d", FRAME_SIZE_BYTES);
+			
 			ret = sw_codec_encode(pcm_raw_data, FRAME_SIZE_BYTES, &encoded_data,
 					      &encoded_data_size);
 
@@ -172,8 +178,9 @@ static void encoder_thread(void *arg1, void *arg2, void *arg3)
 		}
 
 		if (sw_codec_cfg.encoder.enabled) {
-			streamctrl_send(encoded_data, encoded_data_size,
-					sw_codec_cfg.encoder.num_ch);
+			// LOG_ERR("SIZE: %d - NUM_CH: %d", encoded_data_size, sw_codec_cfg.encoder.num_ch);
+			// streamctrl_send(encoded_data, encoded_data_size,
+			// 		sw_codec_cfg.encoder.num_ch);
 		}
 		STACK_USAGE_PRINT("encoder_thread", &encoder_thread_data);
 	}
