@@ -167,10 +167,10 @@ static size_t test_tone_size;
  *
  * @note	Used to adjust audio clock to account for drift.
  *
- * @param	sdu_ref_us	Timestamp for sdu.
+ * @param	sdu_ref_us	Timestamp for SDU.
  * @param	frame_start_ts	Timestamp for I2S.
  *
- * @return	err_us	Error in microseconds.
+ * @return	Error in microseconds (err_us).
  */
 static int32_t err_us_calculate(uint32_t sdu_ref_us, uint32_t frame_start_ts)
 {
@@ -275,7 +275,20 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 
 		ctrl_blk.drift_comp.ctr = 0;
 
-		int32_t err_us = err_us_calculate(ctrl_blk.previous_sdu_ref_us, frame_start_ts);
+		// int32_t err_us = err_us_calculate(ctrl_blk.previous_sdu_ref_us, frame_start_ts);
+
+		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
+
+		if (err_us > (BLK_PERIOD_US / 2)) {
+			err_us = err_us - BLK_PERIOD_US;
+		}
+
+		LOG_WRN("DRIFT_STATE_OFFSET - err_us: %d", err_us);
+
+		// /* TODO: Figure out why err_us jumps from positive to negative suddenly */
+		// if (err_us < 0 && (CONFIG_AUDIO_DEV != GATEWAY)) {
+		// 	return;
+		// }
 
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
