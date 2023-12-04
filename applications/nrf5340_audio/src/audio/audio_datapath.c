@@ -176,8 +176,8 @@ static int32_t err_us_calculate(uint32_t sdu_ref_us, uint32_t frame_start_ts)
 {
 	bool err_neg = false;
 
-	if (IS_ENABLED(CONFIG_TRANSPORT_BIS)) {
-		sdu_ref_us += 10000;	
+	if (IS_ENABLED(CONFIG_BT_LL_ACS_NRF53) && IS_ENABLED(CONFIG_TRANSPORT_BIS)) {
+		sdu_ref_us += CONFIG_AUDIO_FRAME_DURATION_US;	
 	}
 
 	int64_t total_err = (sdu_ref_us - frame_start_ts);
