@@ -175,6 +175,11 @@ static size_t test_tone_size;
 static int32_t err_us_calculate(uint32_t sdu_ref_us, uint32_t frame_start_ts)
 {
 	bool err_neg = false;
+
+	if (IS_ENABLED(CONFIG_TRANSPORT_BIS)) {
+		sdu_ref_us += 10000;	
+	}
+
 	int64_t total_err = (sdu_ref_us - frame_start_ts);
 
 	/* Store sign for later use, since remainder operation is undefined for negatives */
@@ -182,6 +187,11 @@ static int32_t err_us_calculate(uint32_t sdu_ref_us, uint32_t frame_start_ts)
 		err_neg = true;
 		total_err *= -1;
 	}
+
+	// if (ctrl_blk.drift_comp.state != DRIFT_STATE_LOCKED) {
+	// 	LOG_WRN("err_neg: %d, total_err: %lld, sdu: %d, fr_start: %d", err_neg, total_err,
+	// 		sdu_ref_us, frame_start_ts);
+	// }
 
 	/* Check diff below 1000 us, diff above 1000 us is fixed later on */
 	int32_t err_us = total_err % BLK_PERIOD_US;
@@ -229,7 +239,7 @@ static void drift_comp_state_set(enum drift_comp_state new_state)
 static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 {
 	// static uint16_t test_ctr;
-	
+
 	switch (ctrl_blk.drift_comp.state) {
 	case DRIFT_STATE_INIT: {
 		/* Check if audio data has been received */
@@ -323,7 +333,7 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
 		hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
-		
+
 		if ((err_us < DRIFT_ERR_THRESH_LOCK) && (err_us > -DRIFT_ERR_THRESH_LOCK)) {
 			drift_comp_state_set(DRIFT_STATE_LOCKED);
 		}
