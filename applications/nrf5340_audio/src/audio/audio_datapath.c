@@ -228,6 +228,8 @@ static void drift_comp_state_set(enum drift_comp_state new_state)
  */
 static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 {
+	// static uint16_t test_ctr;
+	
 	switch (ctrl_blk.drift_comp.state) {
 	case DRIFT_STATE_INIT: {
 		/* Check if audio data has been received */
@@ -273,27 +275,55 @@ static void audio_datapath_drift_compensation(uint32_t frame_start_ts)
 			return;
 		}
 
+		// if (++test_ctr < 10) {
+		// 	int32_t err_us =
+		// 		err_us_calculate(ctrl_blk.previous_sdu_ref_us, frame_start_ts);
+
+		// 	/* Use asymptotic correction with small errors */
+		// 	err_us /= 2;
+		// 	int32_t freq_adj = APLL_FREQ_ADJ(err_us);
+
+		// 	LOG_WRN("ctr: %d, DRIFT_STATE_OFFSET - err_us: %d", test_ctr, err_us);
+
+		// 	hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
+		// 	return;
+		// }
+
 		ctrl_blk.drift_comp.ctr = 0;
 
 		// int32_t err_us = err_us_calculate(ctrl_blk.previous_sdu_ref_us, frame_start_ts);
 
-		int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
+		// int32_t err_us = (ctrl_blk.previous_sdu_ref_us - frame_start_ts) % BLK_PERIOD_US;
 
-		if (err_us > (BLK_PERIOD_US / 2)) {
-			err_us = err_us - BLK_PERIOD_US;
-		}
+		// if (err_us > (BLK_PERIOD_US / 2)) {
+		// 	err_us = err_us - BLK_PERIOD_US;
+		// }
 
-		LOG_WRN("DRIFT_STATE_OFFSET - err_us: %d", err_us);
+		// int32_t err_us_corr = err_us / 2;
+
+		// LOG_WRN("DRIFT_STATE_OFFSET - err_us: %d", err_us);
+
+		// LOG_WRN("DRIFT_STATE_OFFSET after corrected - err_us_corr: %d", err_us_corr);
 
 		// /* TODO: Figure out why err_us jumps from positive to negative suddenly */
 		// if (err_us < 0 && (CONFIG_AUDIO_DEV != GATEWAY)) {
 		// 	return;
 		// }
 
+		// int32_t freq_adj = APLL_FREQ_ADJ(err_us);
+
+		// hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
+
+		// From DRIFT_STATE_LOCKED:
+
+		int32_t err_us = err_us_calculate(ctrl_blk.previous_sdu_ref_us, frame_start_ts);
+
+		/* Use asymptotic correction with small errors */
+		err_us /= 2;
 		int32_t freq_adj = APLL_FREQ_ADJ(err_us);
 
 		hfclkaudio_set(ctrl_blk.drift_comp.center_freq + freq_adj);
-
+		
 		if ((err_us < DRIFT_ERR_THRESH_LOCK) && (err_us > -DRIFT_ERR_THRESH_LOCK)) {
 			drift_comp_state_set(DRIFT_STATE_LOCKED);
 		}
