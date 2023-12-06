@@ -26,6 +26,18 @@ static int wdt_ch_id;
 
 K_TIMER_DEFINE(ctlr_poll_timer, ctlr_version_poll_timer_handler, NULL);
 
+static const char *bt_hci_get_ver_str(uint8_t core_version)
+{
+	const char *const str[] = {"1.0b", "1.1", "1.2", "2.0", "2.1", "3.0", "4.0",
+				   "4.1",  "4.2", "5.0", "5.1", "5.2", "5.3", "5.4"};
+
+	if (core_version < ARRAY_SIZE(str)) {
+		return str[core_version];
+	}
+
+	return "unknown";
+}
+
 static int bt_ll_acs_nrf53_cfg(void)
 {
 #if (CONFIG_BT_LL_ACS_NRF53)
@@ -169,6 +181,7 @@ int bt_mgmt_ctlr_cfg_init(bool watchdog_enable)
 {
 	int ret;
 	uint16_t ctlr_version = 0;
+	struct net_buf *rsp;
 
 	ret = bt_mgmt_ctlr_cfg_version_get(&ctlr_version);
 	if (ret) {
@@ -176,8 +189,17 @@ int bt_mgmt_ctlr_cfg_init(bool watchdog_enable)
 	}
 
 	if (IS_ENABLED(CONFIG_BT_LL_ACS_NRF53)) {
+		ret = bt_hci_cmd_send_sync(BT_HCI_OP_READ_LOCAL_VERSION_INFO, NULL, &rsp);
+		if (ret) {
+			return ret;
+		}
+
+		struct bt_hci_rp_read_local_version_info *rp = (void *)rsp->data;
+
 		/* NOTE: The string below is used by the Nordic CI system */
-		LOG_INF("Controller: LL_ACS_NRF53. Version: %d", ctlr_version);
+		LOG_INF("Controller: LL_ACS_NRF53: Version %s (0x%02x), Revision %d",
+			bt_hci_get_ver_str(rp->hci_version), rp->hci_version, rp->hci_revision);
+
 		ret = bt_ll_acs_nrf53_cfg();
 		if (ret) {
 			return ret;
